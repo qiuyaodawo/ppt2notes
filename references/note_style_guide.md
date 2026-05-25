@@ -84,23 +84,23 @@ Speaker notes often contain high-value teaching context. Blend them into the pro
 
 ## Boundaries for expansion
 
-Allowed expansions:
+The point of expanding the source material is to lower the friction for a student reading the slide deck on their own. Use that test, not a checklist, to decide whether a sentence belongs.
 
-- Brief historical background
-- Missing derivation steps
-- One short clarifying example
-- Concept relationships
-- Common misconceptions
+Allowed expansions, and why each helps:
 
-Not allowed:
+- **Brief historical background** — anchors a concept in time so the student remembers when and why it appeared
+- **Missing derivation steps** — slides routinely jump from "we want X" to "the result is Y" because the lecturer filled the gap verbally; restoring the steps is exactly the value the lecturer was providing live
+- **One short clarifying example** — a concrete instance helps a beginner pattern-match the abstract definition
+- **Concept relationships** — explaining how the current topic connects to an earlier or later one prevents the deck from feeling like disconnected islands
+- **Common misconceptions** — heading off a predictable wrong interpretation saves the student from learning the wrong thing first
 
-- Tangents unrelated to the deck
-- Content far above the apparent course level without need
-- Invented facts, citations, datasets, or references
+Avoid:
 
-Test for inclusion:
+- **Tangents unrelated to the deck** — they cost reading time without explaining the source material; a curious reader can search elsewhere
+- **Content far above the apparent course level** — pulling in graduate-level theory into an undergraduate intro creates noise, not depth
+- **Invented facts, citations, datasets, or references** — students will trust the note; fabrication damages that trust and produces wrong learning
 
-- Every added sentence should help a student understand the source deck more easily
+The single test for inclusion: would removing this sentence make the source deck harder to follow? If no, drop it.
 
 ## Length guidance
 

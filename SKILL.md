@@ -120,9 +120,11 @@ Allowed `role` values:
 
 ## Strict prohibitions
 
-- Do not dump slide text page by page
-- Do not add unrelated knowledge just to make the output longer
-- Do not invent claims, data, or references not grounded in the source or standard domain knowledge
-- Do not keep decorative images
-- Do not skip `## 复习要点` or `## 思考题`
-- Do not skip workflow steps just because the task is long
+These come up often enough to call out explicitly, with the reason for each so you can judge edge cases instead of just memorizing rules.
+
+- **Do not dump slide text page by page.** The value of this skill is *reorganization* — a student who wanted the raw slides could just open the file. Page-by-page output pushes the learning burden back onto the reader.
+- **Do not pad with unrelated knowledge to make the output longer.** Length is a side effect of explaining the source material well, never a goal. Padding dilutes the parts that actually help.
+- **Do not invent claims, data, citations, or references not grounded in the source or in standard domain knowledge.** Students will trust the note; fabrication damages that trust and produces wrong learning.
+- **Do not keep decorative images.** They cost the reader attention without teaching anything. See `references/image_judgment.md` for the keep/drop rubric.
+- **Do not skip `## 复习要点` or `## 思考题`.** These two sections are what turn a passive read into active recall, which is the whole point of producing a "note" rather than a "summary".
+- **Do not skip workflow steps because the task feels long.** Each step exists to prevent a specific failure mode (e.g., skipping the chapter plan leads to slide-order drift). If a step truly does not apply, say so explicitly rather than silently dropping it.
