@@ -6,6 +6,8 @@ This file expands the required workflow from `SKILL.md`. Use it when the skill h
 
 Goal: determine the safest viable execution path before doing any work.
 
+**Why this step exists:** Different agent runtimes have very different powers — local shell, sandboxed Python, multimodal-only, or text-only. Picking the wrong path leads to silent failures (e.g., generating a note that references images that were never extracted). One short capability probe at the top removes a whole class of confusion.
+
 ### Scripted path checks
 
 Check only the dependencies required by the actual input format.
@@ -30,6 +32,8 @@ If the agent cannot run shell commands or Python, see `platform_fallbacks.md`.
 
 ## Step 1 - Detect input format
 
+**Why this step exists:** The three input formats need different toolchains, and `.ppt` (old binary format) cannot be parsed by `python-pptx` directly — it needs LibreOffice to convert it first. Branching by extension up front is cleaner than letting downstream code blow up on an unsupported file.
+
 ```python
 ext = Path(input_file).suffix.lower()
 if ext == ".ppt":
@@ -44,6 +48,8 @@ else:
 ```
 
 ## Step 2 - Extract the intermediate JSON
+
+**Why this step exists:** Separating extraction from generation gives a stable, inspectable artifact between the two stages. If something looks wrong in the final note, you can re-check `intermediate.json` to tell whether the bug was in extraction or in the writing stage. It also makes the rest of the pipeline format-agnostic.
 
 ### Working directory convention
 
@@ -64,7 +70,28 @@ assert data["slides"], "No slide data"
 assert all("index" in s for s in data["slides"]), "Each slide must have an index"
 ```
 
+### Content sanity check
+
+After validation, check whether the extracted text is substantive enough to learn from. This catches scanned PDFs and image-only decks early, before wasting time generating an empty note.
+
+```python
+total_chars = sum(len(s.get("text", "")) + len(s.get("notes", "")) for s in data["slides"])
+n_slides = len(data["slides"])
+
+if n_slides >= 5 and total_chars < 500:
+    # Almost certainly a scanned PDF with no text layer, or an image-only deck.
+    abort_with_message(
+        "The source has slides but almost no extractable text "
+        "(likely a scanned PDF or image-only deck). This skill needs a text layer. "
+        "Run OCR first (e.g., `ocrmypdf input.pdf output.pdf`) and retry."
+    )
+```
+
+The 500-char / 5-slide threshold is a heuristic, not a hard rule. A genuinely short deck (a 3-slide intro) can have low character counts and still be valid — that is why the slide-count guard is there. Use judgment if the numbers are borderline.
+
 ## Step 3 - Read globally and regroup by topic
+
+**Why this step exists:** Generating the note directly slide-by-slide produces output that drifts with the lecturer's original ordering and loses the chance to merge scattered material. Building an explicit chapter plan first forces a topical view of the whole deck, which is the single biggest reason a study note feels readable rather than transcribed.
 
 ### Input
 
@@ -97,11 +124,15 @@ Read only `{index, title, text, notes}` from `intermediate.json`. Do not inspect
 - Do not split one slide across multiple chapters
 - Cover all non-empty instructional slides; title pages, agenda pages, and thank-you pages may be dropped
 
+**Short-deck fallback:** if the deck has fewer than ~5 instructional slides after dropping cover/agenda/thank-you pages, ignore the "3 to 8 chapters" rule and produce a single chapter that covers the whole deck. Splitting a 4-slide deck into 3 chapters yields three thin sections that hurt readability more than they help.
+
 ### Agent behavior
 
 After building the chapter plan, report it briefly and continue automatically. Do not wait for confirmation unless the user explicitly asked for review checkpoints.
 
 ## Step 4 - Judge image importance
+
+**Why this step exists:** Lecture decks routinely carry decorative logos, footer ornaments, and stock photos that add nothing to learning. Keeping them all pollutes the note and trains the reader to ignore figures. Judging each image once, against the slide's context, lets the final note keep only the figures that actually teach something.
 
 See `image_judgment.md`.
 
@@ -113,6 +144,8 @@ Key rules:
 - Informative charts, formulas, diagrams, screenshots, and content-relevant photos should usually be kept
 
 ## Step 5 - Write chapter-based notes
+
+**Why this step exists:** This is where reorganized text actually gets produced. Generating one chapter at a time, with a known summary of the previous chapter as context, keeps each generation pass bounded and avoids the model losing the overall thread on long decks. It is also the natural seam to apply the style guide consistently.
 
 ### Input package per chapter
 
@@ -152,6 +185,8 @@ Use `chunking_strategy.md` when the deck is large.
 
 ## Step 6 - Add review aids
 
+**Why this step exists:** A document that ends right after the last topic is a summary, not a note. The `复习要点` section forces one compressed takeaway per chapter (catches sections that wandered), and `思考题` turns passive reading into active recall, which is the actual mechanism by which study notes help retention.
+
 Always append:
 
 ```markdown
@@ -174,6 +209,8 @@ Requirements:
 - Do not provide full answers
 
 ## Step 7 - Write files and clean up
+
+**Why this step exists:** The previous steps produce content in memory or in temporary files; this step commits the final artifacts to disk and removes scaffolding the user does not need. A clear printed summary at the end also lets the user know exactly what was produced and where to find it, which matters when the working directory contains both source slides and generated files.
 
 ```python
 output_path = source_path.with_name(f"{source_path.stem}_notes.md")

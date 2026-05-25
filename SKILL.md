@@ -115,7 +115,10 @@ Allowed `role` values:
 - If a required parser is missing, report the exact install command and stop
 - If `.ppt` conversion is required but LibreOffice is unavailable, tell the user to install LibreOffice or resave as `.pptx` or `.pdf`
 - If parsing fails, forward the useful error details and stop
-- If the extracted document has no usable text, explain that scanned PDFs without a text layer are not supported by this skill
+- **Scanned PDF with no text layer**: after extraction, if the total slide text across the whole document is under ~500 characters (and there are non-trivially many pages), the source is almost certainly a scanned PDF. Stop and explain that scanned PDFs without a text layer need OCR first, which is out of scope for this skill. Suggest the user run an OCR tool (e.g., `ocrmypdf input.pdf output.pdf`) and retry.
+- **Very short deck (fewer than ~5 instructional slides)**: do not force the 3-to-8 chapter rule. Produce a single chapter that covers the whole deck, and still write `## 复习要点` and `## 思考题`. Forcing artificial chapter splits on tiny decks creates incoherent sections.
+- **Mixed-language source (e.g., English slides, Chinese speaker notes)**: still produce Chinese output. Translate technical terms to Chinese on first use and keep the bilingual `中文 (English)` introduction pattern; English-original quotations may be kept inline when translation would distort meaning.
+- **Deck that is clearly not learning material** (sales pitch, photo gallery, agenda-only deck): stop and explain that this skill is for lecture-style material. Offer to summarize it some other way instead.
 - If the deck is very large, warn about runtime and continue with chunked generation
 
 ## Strict prohibitions
