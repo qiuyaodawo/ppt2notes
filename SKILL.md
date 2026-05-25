@@ -1,23 +1,31 @@
 ---
 name: ppt2notes
-description: Turn a course slide deck or lecture PDF into a self-study Markdown note. Use this skill when the user provides a `.ppt`, `.pptx`, or slide-style `.pdf` file and wants study notes, a lecture handout, review material, or a reorganized learning document rather than a slide-by-slide summary.
+description: Turn a course slide deck or lecture PDF into a self-study Markdown study note written in Chinese. Use this skill when the user provides a `.ppt`, `.pptx`, or slide-style `.pdf` file AND signals intent to produce an organized written study document — including casual phrasings like "整理一下这个课件", "帮我做笔记", "复习一下这个讲义", "做一份讲义", "整理成讲义", or asking for a "readable / reorganized / topic-based" version. Trigger even when the user does not literally say "notes", "handout", or "讲义", as long as the message clearly asks for a reorganized written artifact. Do not trigger when the user only asks for help understanding the slides (e.g., "看不懂这个 PPT", "讲讲这个是什么意思") without asking for a written deliverable — answer those conversationally instead. Do not trigger when the user only provides a slide file with no instruction at all — ask what they want to do with it. Do not trigger for books, papers, non-slide documents, pure translation requests, or slide files that are clearly not learning material (pitch decks, photo albums).
 ---
 
 # ppt2notes
 
 ## When to use this skill
 
-Use this skill when:
+Trigger this skill when **both** conditions hold:
 
-- The user provides a local `.ppt`, `.pptx`, or lecture-style `.pdf`
-- The user asks to turn slides into study notes, a handout, review notes, or a readable learning document
-- The desired output should reorganize material by topic, not preserve slide order
+1. The input is a local `.ppt`, `.pptx`, or lecture-style `.pdf`, AND
+2. The user's message asks for an organized written study artifact derived from that file
+
+Concrete examples of (2):
+
+- Explicit requests: "做笔记", "讲义", "handout", "study notes", "review material"
+- Casual but clear "produce-an-artifact" framing: "整理一下", "整理成讲义", "复习一下", "帮我消化成一份笔记"
+- Topic-reorganization requests: "按主题重新整理", "重新组织一下"
 
 Do not use this skill for:
 
-- Books or papers in PDF form
-- Pure translation tasks
-- Simple summarization tasks where expansion is not wanted
+- Books or papers in PDF form (these are not slide-style documents)
+- Pure translation tasks (the user wants language conversion, not learning material)
+- Simple summarization where the user explicitly wants something shorter than the slides, not a study expansion
+- Requests for help **understanding** the slides without asking for a written deliverable (e.g., "看不懂这个 PPT", "讲讲这个是什么意思", "这页在说啥") — those are conversational explanations, not note-generation tasks; answer them directly instead
+- Slide files that are clearly not learning material (e.g., a product pitch deck, a wedding photo album exported as `.pptx`) — in those cases the slide-by-slide structure is the point
+- A bare slide file with no message or instruction — ask the user what they want before assuming this skill applies, since a slide file alone could be heading toward many different tasks (extract text, translate, summarize, redesign, …)
 
 ## Input and output
 
