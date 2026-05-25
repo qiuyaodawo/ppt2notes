@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ppt2notes/intermediate.schema.json",
+  "title": "ppt2notes intermediate representation",
+  "description": "Shared intermediate representation emitted by extract_pptx.py and extract_pdf.py. The note-generation stage uses this as input.",
+  "type": "object",
+  "required": ["schema_version", "source", "slides"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "source": {
+      "type": "object",
+      "required": ["path", "format"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Absolute path to the source file"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["pptx", "pdf"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Title extracted from document metadata or the first page, if available"
+        },
+        "page_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "slides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["index"],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based slide or page number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "Main body text, with bullet items joined by newlines"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Speaker notes; empty string for PDF input"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "path", "width", "height"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^slide\\d+_img\\d+$",
+                  "description": "Identifier such as slide12_img1"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "Path relative to the work directory"
+                },
+                "width": {"type": "integer", "minimum": 0},
+                "height": {"type": "integer", "minimum": 0},
+                "position": {
+                  "type": "string",
+                  "enum": ["full", "center", "inset"]
+                },
+                "context_text": {
+                  "type": "string",
+                  "description": "Nearby text from the same slide, used to help judge image importance"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
