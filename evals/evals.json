@@ -1,0 +1,81 @@
+{
+  "skill_name": "ppt2notes",
+  "notes": "Realistic prompts a student or instructor might send. Assertions are objective checks the grader (or a script) can verify against the produced .md file and the surrounding work directory. Replace the file paths under evals/fixtures/ with your own slide decks before running — see evals/README.md.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "concept-heavy-zh",
+      "prompt": "帮我把这个课件整理一下,我下周要复习。",
+      "files": ["evals/fixtures/concept_heavy_zh.pptx"],
+      "expected_output": "A Chinese study note named concept_heavy_zh_notes.md saved next to the source. Topic-reorganized prose, 3-8 chapters, bilingual term introductions, ending with 复习要点 and 思考题.",
+      "assertions": [
+        "Output file `concept_heavy_zh_notes.md` exists next to the source .pptx",
+        "Output contains a top-level `# ` title heading (exactly one)",
+        "Output contains a `## 复习要点` section",
+        "Output contains a `## 思考题` section",
+        "Number of `## ` chapter headings (excluding 复习要点 and 思考题) is between 3 and 8",
+        "At least one term is introduced bilingually using the `中文 (English)` pattern",
+        "The 思考题 section contains between 5 and 10 numbered items",
+        "Output body is predominantly narrative prose (more sentence-ending punctuation `。` than standalone bullet lines starting with `- ` or `• `)",
+        "Every `![...](...)` image reference resolves to an actual file in the `concept_heavy_zh_assets/` directory"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "math-heavy-en-to-zh",
+      "prompt": "这是我们教授的英文 slides,做一份中文笔记吧,公式记得用 LaTeX。",
+      "files": ["evals/fixtures/math_heavy_en.pdf"],
+      "expected_output": "A Chinese study note. All formulas that appeared as screenshots in the source PDF have been rewritten as LaTeX. Technical English terms get bilingual introductions on first use.",
+      "assertions": [
+        "Output file `math_heavy_en_notes.md` exists",
+        "Output contains at least one block-level LaTeX formula delimited by `$$ ... $$`",
+        "Output contains at least three LaTeX expressions total (inline `$...$` or block `$$...$$`)",
+        "The main body (excluding code blocks and LaTeX) is predominantly Chinese characters",
+        "At least two English technical terms get bilingual first-use introduction in the `中文 (English)` form",
+        "No image reference in the output points to a file that is purely a formula screenshot (formula images should be rewritten as LaTeX, not embedded)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "image-heavy-deck",
+      "prompt": "把这个 pptx 整理成讲义。",
+      "files": ["evals/fixtures/image_heavy.pptx"],
+      "expected_output": "A Chinese study note where decorative images (logos, footer ornaments, repeated branding) have been dropped, while one or more genuinely instructional figures are kept with `> **图解(...)**` explanations.",
+      "assertions": [
+        "Output file `image_heavy_notes.md` exists",
+        "Number of `![...](...)` image references in the output is strictly less than the number of image files originally extracted into `image_heavy_assets/`",
+        "Every kept image is preceded (within 5 lines above) by a `> **图解(图 X-Y,<role>):**` explanation block",
+        "Allowed `<role>` values in 图解 blocks are one of: chart, formula, diagram, screenshot, photo",
+        "No kept image has the role `decoration`",
+        "Output contains both `## 复习要点` and `## 思考题`"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "scanned-pdf-graceful-failure",
+      "prompt": "看看这个 pdf,帮我做点笔记。",
+      "files": ["evals/fixtures/scanned.pdf"],
+      "expected_output": "The skill detects that the PDF has no extractable text layer and stops cleanly with an explanation pointing the user toward OCR. No notes file is generated.",
+      "assertions": [
+        "No `scanned_notes.md` file is created next to the source",
+        "The agent's reply explicitly mentions one of: 'OCR', 'scanned', 'text layer', or '文字层'",
+        "The agent's reply suggests a concrete next step (e.g., naming an OCR tool such as `ocrmypdf`, or asking the user to provide a text-layer PDF)",
+        "The agent did NOT silently produce a near-empty notes file"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "very-short-deck",
+      "prompt": "这是我课上随手记的几张 slides,帮我整理成一份小笔记。",
+      "files": ["evals/fixtures/tiny_deck.pptx"],
+      "expected_output": "A Chinese study note treating the small deck as a single chapter (instead of forcing 3-8 chapters). 复习要点 and 思考题 are still present.",
+      "assertions": [
+        "Output file `tiny_deck_notes.md` exists",
+        "Number of `## ` chapter headings (excluding 复习要点 and 思考题) equals exactly 1",
+        "Output contains `## 复习要点`",
+        "Output contains `## 思考题`",
+        "Output is not empty: total length of the markdown body exceeds 200 characters"
+      ]
+    }
+  ]
+}
