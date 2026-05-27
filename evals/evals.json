@@ -1,6 +1,6 @@
 {
   "skill_name": "ppt2notes",
-  "notes": "Realistic prompts a student or instructor might send. Assertions are objective checks the grader (or a script) can verify against the produced .md file and the surrounding work directory. Replace the file paths under evals/fixtures/ with your own slide decks before running — see evals/README.md.",
+  "notes": "Realistic prompts a student or instructor might send. Assertions are objective checks to verify against the produced .md file and surrounding work directory. Generate synthetic files with `python scripts/generate_eval_fixtures.py --out-dir evals/fixtures`, or replace the file paths under evals/fixtures/ with your own slide decks before running.",
   "evals": [
     {
       "id": 1,

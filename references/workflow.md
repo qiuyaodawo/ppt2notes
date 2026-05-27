@@ -147,6 +147,8 @@ Key rules:
 
 **Why this step exists:** This is where reorganized text actually gets produced. Generating one chapter at a time, with a known summary of the previous chapter as context, keeps each generation pass bounded and avoids the model losing the overall thread on long decks. It is also the natural seam to apply the style guide consistently.
 
+Use `assets/note_template.md` as the output skeleton. Do not copy placeholder text; use it to keep heading levels, image blocks, and review sections consistent.
+
 ### Input package per chapter
 
 ```text
@@ -208,13 +210,26 @@ Requirements:
 - Hints are allowed
 - Do not provide full answers
 
-## Step 7 - Write files and clean up
+## Step 7 - Write files, validate, and clean up
 
-**Why this step exists:** The previous steps produce content in memory or in temporary files; this step commits the final artifacts to disk and removes scaffolding the user does not need. A clear printed summary at the end also lets the user know exactly what was produced and where to find it, which matters when the working directory contains both source slides and generated files.
+**Why this step exists:** The previous steps produce content in memory or in temporary files; this step commits the final artifacts to disk, catches broken structure before delivery, and removes scaffolding the user does not need. A clear printed summary at the end also lets the user know exactly what was produced and where to find it, which matters when the working directory contains both source slides and generated files.
 
 ```python
 output_path = source_path.with_name(f"{source_path.stem}_notes.md")
 output_path.write_text(final_md, encoding="utf-8")
+
+# Reuse the short-deck fallback decision from Step 3.
+lint_min = 1 if is_short_deck else 3
+run([
+    "python",
+    "scripts/lint_note.py",
+    "--note",
+    str(output_path),
+    "--min-chapters",
+    str(lint_min),
+    "--max-chapters",
+    "8",
+])
 
 for img in image_decisions:
     if img["decision"] == "drop":
@@ -233,3 +248,4 @@ Important:
 
 - `img["path"]` is relative to `work_dir`
 - Clean up only files created by this workflow
+- If `lint_note.py` fails, fix the Markdown structure or image paths and rerun it before reporting completion

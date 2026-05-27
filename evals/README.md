@@ -16,15 +16,15 @@ evals/
     └── tiny_deck.pptx
 ```
 
-`fixtures/` is **not** checked in — each test case names a file but you supply the bytes. This keeps the repo small and lets you point the tests at decks you actually care about.
+`fixtures/` is **not** checked in — each test case names a file, and you can either generate synthetic fixtures or supply your own real decks.
 
 ## Populating fixtures
 
 You have three options, from easiest to most rigorous:
 
-1. **Use your own decks.** Drop any `.pptx`/`.pdf` files into `fixtures/` and rename them to match the paths in `evals.json`. The faster path if you already have representative material.
-2. **Edit `evals.json`** to point `"files"` at decks you already have somewhere else on disk. Useful when you do not want to copy large files.
-3. **Generate synthetic fixtures.** A short `python-pptx` script can build minimal decks for the structural test cases (`tiny_deck.pptx`, `image_heavy.pptx`). For `scanned.pdf`, you can take any PDF and run it through a "print to PDF" tool that does not embed a text layer, or use `pdf2image` + `img2pdf` to round-trip pages through PNG.
+1. **Generate synthetic fixtures.** Run `python scripts/generate_eval_fixtures.py --out-dir evals/fixtures` from the skill root. This creates every file named in `evals.json`.
+2. **Use your own decks.** Drop any `.pptx`/`.pdf` files into `fixtures/` and rename them to match the paths in `evals.json`. This is better when you have representative course material.
+3. **Edit `evals.json`** to point `"files"` at decks you already have somewhere else on disk. Useful when you do not want to copy large files.
 
 ## What each test case targets
 
@@ -44,7 +44,13 @@ These prompts and assertions are intentionally written to be runnable through th
 2. In a fresh agent session, send the `prompt` and attach (or reference) the fixture.
 3. Walk through the `assertions` list one by one against what the agent produced.
 
-For automated runs, follow the `skill-creator` workflow: spawn one with-skill subagent and one baseline subagent per test case in the same turn, save outputs under a sibling workspace directory (e.g. `../ppt2notes-workspace/iteration-1/eval-<N>/{with_skill,old_skill}/outputs/`), then grade with `agents/grader.md` and aggregate with `scripts.aggregate_benchmark`.
+For structural checks after a note is generated, run:
+
+```bash
+python scripts/lint_note.py --note path/to/generated_notes.md --min-chapters 3 --max-chapters 8
+```
+
+For comparative quality checks, run each prompt in a fresh agent session and manually score the assertions in `evals.json`. Keep generated outputs in a sibling workspace directory such as `../ppt2notes-workspace/iteration-1/eval-<N>/outputs/` so the skill directory stays clean.
 
 ## Adding new evals
 

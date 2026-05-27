@@ -6,7 +6,7 @@ Usage:
 
 Behavior:
     - One output item per slide
-    - Text is collected from every shape with a text frame
+    - Text is collected from text frames, grouped shapes, tables, and chart labels
     - Title prefers slide.shapes.title, then falls back to the first short line
     - Notes come from the speaker notes area when available
     - Images are written to the assets directory and get a rough position label
@@ -31,6 +31,88 @@ from _schema import ImageRef, Intermediate, Slide, Source  # noqa: E402
 
 # 1 inch = 914400 EMU
 EMU_PER_INCH = 914400
+
+
+def iter_shapes(shapes):
+    """Yield shapes recursively so grouped content is not silently skipped."""
+    for shape in shapes:
+        yield shape
+        try:
+            nested = shape.shapes
+        except Exception:
+            nested = None
+        if nested is not None:
+            yield from iter_shapes(nested)
+
+
+def clean_text(text: str) -> str:
+    """Normalize noisy text-frame output while preserving line breaks."""
+    lines = [line.strip() for line in text.splitlines()]
+    return "\n".join(line for line in lines if line).strip()
+
+
+def table_text(shape) -> str:
+    """Extract visible cell text from a PowerPoint table shape."""
+    try:
+        if not shape.has_table:
+            return ""
+    except Exception:
+        return ""
+
+    rows: list[str] = []
+    try:
+        for row in shape.table.rows:
+            cells = [clean_text(cell.text) for cell in row.cells]
+            row_text = " | ".join(cell for cell in cells if cell)
+            if row_text:
+                rows.append(row_text)
+    except Exception:
+        return ""
+    return "\n".join(rows).strip()
+
+
+def chart_text(shape) -> str:
+    """Extract chart title, category labels, and series names when available."""
+    try:
+        if not shape.has_chart:
+            return ""
+        chart = shape.chart
+    except Exception:
+        return ""
+
+    parts: list[str] = []
+
+    try:
+        if chart.has_title and chart.chart_title.text_frame:
+            title = clean_text(chart.chart_title.text_frame.text)
+            if title:
+                parts.append(f"Chart title: {title}")
+    except Exception:
+        pass
+
+    try:
+        for plot in chart.plots:
+            try:
+                categories = [str(c) for c in plot.categories if str(c)]
+                if categories:
+                    parts.append("Chart categories: " + ", ".join(categories[:20]))
+            except Exception:
+                pass
+
+            try:
+                series_names = []
+                for series in plot.series:
+                    name = str(getattr(series, "name", "") or "").strip()
+                    if name:
+                        series_names.append(name)
+                if series_names:
+                    parts.append("Chart series: " + ", ".join(series_names[:20]))
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return "\n".join(parts).strip()
 
 
 def extract(input_path: Path, out_dir: Path, assets_subdir: str = "") -> Intermediate:
@@ -91,14 +173,21 @@ def extract(input_path: Path, out_dir: Path, assets_subdir: str = "") -> Interme
 
         # ----- text -----
         text_parts: list[str] = []
-        for shape in slide.shapes:
+        seen_text: set[str] = set()
+        for shape in iter_shapes(slide.shapes):
             try:
                 if shape.has_text_frame:
-                    t = shape.text_frame.text.strip()
-                    if t and t != title:
+                    t = clean_text(shape.text_frame.text)
+                    if t and t != title and t not in seen_text:
                         text_parts.append(t)
+                        seen_text.add(t)
             except Exception:
-                continue
+                pass
+
+            for extra_text in (table_text(shape), chart_text(shape)):
+                if extra_text and extra_text not in seen_text:
+                    text_parts.append(extra_text)
+                    seen_text.add(extra_text)
         text = "\n".join(text_parts).strip()
 
         # If there is no explicit title, try the first line of the text.
@@ -122,7 +211,7 @@ def extract(input_path: Path, out_dir: Path, assets_subdir: str = "") -> Interme
         # ----- images -----
         images: list[ImageRef] = []
         img_idx = 0
-        for shape in slide.shapes:
+        for shape in iter_shapes(slide.shapes):
             try:
                 if shape.shape_type != MSO_SHAPE_TYPE.PICTURE:
                     continue
