@@ -51,9 +51,9 @@ Step 1: verify the input is a PDF
 Step 2: skip bundled extraction scripts
         read the PDF directly
         build an equivalent in-memory structure with page text, inferred titles, and image observations
-Step 3-6: follow the normal reasoning workflow
-Step 7: if file writing is available, write the Markdown note
-        otherwise return the Markdown directly in the response
+Step 3-7: follow the normal reasoning workflow, including course memory
+Step 8: if file writing is available, write the Markdown note and course_memory.json
+        otherwise return both the Markdown and the updated course_memory.json content directly in the response
 ```
 
 ### Image handling in multimodal fallback

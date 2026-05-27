@@ -17,7 +17,9 @@
         "At least one term is introduced bilingually using the `中文 (English)` pattern",
         "The 思考题 section contains between 5 and 10 numbered items",
         "Output body is predominantly narrative prose (more sentence-ending punctuation `。` than standalone bullet lines starting with `- ` or `• `)",
-        "Every `![...](...)` image reference resolves to an actual file in the `concept_heavy_zh_assets/` directory"
+        "Every `![...](...)` image reference resolves to an actual file in the `concept_heavy_zh_assets/` directory",
+        "`course_memory.json` exists next to the source file",
+        "`course_memory.json` contains a lecture record whose `source_file` is `concept_heavy_zh.pptx`"
       ]
     },
     {
@@ -32,7 +34,9 @@
         "Output contains at least three LaTeX expressions total (inline `$...$` or block `$$...$$`)",
         "The main body (excluding code blocks and LaTeX) is predominantly Chinese characters",
         "At least two English technical terms get bilingual first-use introduction in the `中文 (English)` form",
-        "No image reference in the output points to a file that is purely a formula screenshot (formula images should be rewritten as LaTeX, not embedded)"
+        "No image reference in the output points to a file that is purely a formula screenshot (formula images should be rewritten as LaTeX, not embedded)",
+        "`course_memory.json` exists next to the source file",
+        "`course_memory.json` records at least one term or symbol introduced by this lecture"
       ]
     },
     {
@@ -47,7 +51,8 @@
         "Every kept image is preceded (within 5 lines above) by a `> **图解(图 X-Y,<role>):**` explanation block",
         "Allowed `<role>` values in 图解 blocks are one of: chart, formula, diagram, screenshot, photo",
         "No kept image has the role `decoration`",
-        "Output contains both `## 复习要点` and `## 思考题`"
+        "Output contains both `## 复习要点` and `## 思考题`",
+        "`course_memory.json` exists next to the source file"
       ]
     },
     {
@@ -60,7 +65,8 @@
         "No `scanned_notes.md` file is created next to the source",
         "The agent's reply explicitly mentions one of: 'OCR', 'scanned', 'text layer', or '文字层'",
         "The agent's reply suggests a concrete next step (e.g., naming an OCR tool such as `ocrmypdf`, or asking the user to provide a text-layer PDF)",
-        "The agent did NOT silently produce a near-empty notes file"
+        "The agent did NOT silently produce a near-empty notes file",
+        "The agent did NOT create or update `course_memory.json` for this failed extraction"
       ]
     },
     {
@@ -74,7 +80,26 @@
         "Number of `## ` chapter headings (excluding 复习要点 and 思考题) equals exactly 1",
         "Output contains `## 复习要点`",
         "Output contains `## 思考题`",
-        "Output is not empty: total length of the markdown body exceeds 200 characters"
+        "Output is not empty: total length of the markdown body exceeds 200 characters",
+        "`course_memory.json` exists next to the source file"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "course-memory-continuity",
+      "prompt": "先把第一份课件整理成讲义；之后在新的 agent 会话里，用同一个目录下的 course_memory.json 处理第二份课件。",
+      "files": [
+        "evals/fixtures/concept_heavy_zh.pptx",
+        "evals/fixtures/concept_followup_zh.pptx"
+      ],
+      "expected_output": "The first run creates course_memory.json. The second run reads it, updates it, and produces concept_followup_zh_notes.md with a concise continuity bridge to the prior lecture.",
+      "assertions": [
+        "After the first run, `course_memory.json` exists next to `concept_heavy_zh.pptx`",
+        "After the second run, `concept_followup_zh_notes.md` exists",
+        "The second note contains a concise `> **与前文的衔接**` block or equivalent opening bridge",
+        "`course_memory.json` contains lecture records for both `concept_heavy_zh.pptx` and `concept_followup_zh.pptx` without duplicate `source_file` entries",
+        "`course_memory.json` includes continuity data such as `last_lecture_summary` and non-empty `open_threads`",
+        "The second note uses prior terms or concepts consistently without pasting the first note's full content"
       ]
     }
   ]

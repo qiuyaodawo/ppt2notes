@@ -9,7 +9,7 @@ Chunk the task when either condition is true:
 
 ## Core idea
 
-Use the chapter plan from Step 3 as the chunk boundary.
+Use the chapter plan from Step 4 as the chunk boundary.
 
 Benefits:
 
@@ -20,7 +20,7 @@ Benefits:
 ## Execution pattern
 
 ```python
-# After Step 3 returns chapters
+# After Step 4 returns chapters
 
 slides_by_index = {slide["index"]: slide for slide in intermediate["slides"]}
 
@@ -32,6 +32,7 @@ for i, chapter in enumerate(chapters):
         "slides_text": [s["text"] + "\n" + s.get("notes", "") for s in chapter_slides],
         "kept_images": [img for img in all_kept if img["slide_index"] in chapter["slide_indices"]],
         "prev_summary": chapters[i - 1]["summary"] if i > 0 else None,
+        "course_memory_brief": course_memory_brief,
     }
     chapter_md = generate_one_chapter(inputs)
     accumulator.append(chapter_md)
@@ -63,6 +64,7 @@ If a single chapter contains more than about 12 slides or more than about 5,000 
 ## Cross-chapter consistency
 
 - Keep a terminology memory so bilingual term introductions are not repeated unnecessarily
+- Keep course-level continuity grounded in `course_memory.json`; do not load previous full notes while chunking
 - Normalize chapter numbering at the end
 - Track image numbering as `图 {chapter_no}-{image_no}`
 

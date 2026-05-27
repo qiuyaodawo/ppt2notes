@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ppt2notes/course-memory.schema.json",
+  "title": "ppt2notes course memory",
+  "description": "Compact persistent memory shared across lecture-note generations for one course.",
+  "type": "object",
+  "required": ["schema_version", "course", "lectures", "terms", "symbols", "continuity"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "course": {
+      "type": "object",
+      "required": ["title", "language", "level", "topic_scope"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Best-known course title, inferred from memory, file names, metadata, or lecture content."
+        },
+        "language": {
+          "type": "string",
+          "description": "Primary output language, normally Chinese."
+        },
+        "level": {
+          "type": "string",
+          "description": "Inferred learner level such as introductory, undergraduate, graduate, or unknown."
+        },
+        "topic_scope": {
+          "type": "string",
+          "description": "One concise sentence describing the course domain."
+        }
+      }
+    },
+    "lectures": {
+      "type": "array",
+      "description": "Compact records for processed source files, in processing order.",
+      "items": {
+        "type": "object",
+        "required": ["source_file", "note_file", "title", "summary", "key_takeaways"],
+        "properties": {
+          "source_file": {"type": "string"},
+          "note_file": {"type": "string"},
+          "title": {"type": "string"},
+          "summary": {
+            "type": "string",
+            "description": "Two to four Chinese sentences summarizing this lecture."
+          },
+          "key_takeaways": {
+            "type": "array",
+            "items": {"type": "string"},
+            "maxItems": 8
+          }
+        }
+      }
+    },
+    "terms": {
+      "type": "array",
+      "description": "Important terms introduced across the course.",
+      "items": {
+        "type": "object",
+        "required": ["zh", "definition"],
+        "properties": {
+          "zh": {"type": "string"},
+          "en": {"type": "string"},
+          "abbr": {"type": "string"},
+          "definition": {
+            "type": "string",
+            "description": "Compact Chinese definition grounded in the course material."
+          },
+          "first_seen": {"type": "string"}
+        }
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "description": "Mathematical symbols or notation conventions established by the course.",
+      "items": {
+        "type": "object",
+        "required": ["symbol", "meaning"],
+        "properties": {
+          "symbol": {"type": "string"},
+          "meaning": {"type": "string"},
+          "first_seen": {"type": "string"}
+        }
+      }
+    },
+    "continuity": {
+      "type": "object",
+      "required": ["last_lecture_summary", "open_threads", "avoid_repeating"],
+      "properties": {
+        "last_lecture_summary": {
+          "type": "string",
+          "description": "Short bridge from the most recent processed lecture."
+        },
+        "open_threads": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Conceptual threads likely to continue in later lectures."
+        },
+        "avoid_repeating": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Foundational explanations already covered enough; mention briefly instead of re-teaching."
+        }
+      }
+    }
+  }
+}

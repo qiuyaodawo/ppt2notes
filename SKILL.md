@@ -36,6 +36,7 @@ Input:
 Output:
 
 - `{original_stem}_notes.md` in the same directory as the source file
+- `course_memory.json` in the same directory as the source file, created or updated on every successful run
 - A single Markdown document in Chinese
 - Image references pointing to `{original_stem}_assets/`
 
@@ -48,10 +49,12 @@ Writing contract:
 - Rewrite formulas in LaTeX
 - Keep only informative images and explain them in text
 - Always end with `## 复习要点` and `## 思考题`
+- Always use course memory for continuity: read or initialize `course_memory.json` before planning, use it while writing, and update it after the note passes validation
 
 Use `assets/note_template.md` as the structural skeleton for the final Markdown. Adapt headings and chapter counts to the source, but keep its overall contract: one `#` title, `##` chapters, optional `###` subsections, `> **图解(...)**` blocks before kept images, and final review sections.
 
 See `references/note_style_guide.md` for style details.
+See `references/course_memory.md` for the required persistent memory behavior.
 
 ## Execution modes
 
@@ -68,13 +71,15 @@ Follow the full workflow in `references/workflow.md`. The required high-level se
 1. Detect available capabilities and input format
 2. Convert `.ppt` to `.pptx` when needed
 3. Extract a normalized intermediate representation
-4. Build a chapter plan from text and notes only
-5. Judge which images are instructionally important
-6. Generate chapter-based study notes
-7. Add review aids, write output, validate the Markdown, and clean temporary artifacts
+4. Read or initialize course memory
+5. Build a chapter plan from text, notes, and compact course memory only
+6. Judge which images are instructionally important
+7. Generate chapter-based study notes
+8. Add review aids, write output, validate the Markdown, update course memory, and clean temporary artifacts
 
 If the deck is large, use `references/chunking_strategy.md`.
 If images matter, use `references/image_judgment.md`.
+Always use `references/course_memory.md`.
 
 ## Script entry points
 
@@ -85,6 +90,7 @@ python scripts/extract_pptx.py --input <file.pptx> --out-dir <work-dir>
 python scripts/extract_pdf.py --input <file.pdf> --out-dir <work-dir>
 python scripts/convert_ppt_to_pptx.py --input <file.ppt> --output <temp-file.pptx>
 python scripts/lint_note.py --note <original_stem>_notes.md --min-chapters 3 --max-chapters 8
+python scripts/lint_course_memory.py --memory course_memory.json
 ```
 
 Use `{original_stem}_assets/` as the work directory unless there is a strong reason not to.
@@ -126,6 +132,7 @@ Allowed `role` values:
 - If `.ppt` conversion is required but LibreOffice is unavailable, tell the user to install LibreOffice or resave as `.pptx` or `.pdf`
 - If parsing fails, forward the useful error details and stop
 - If `lint_note.py` fails on the generated Markdown, revise the note or image references and rerun the linter before reporting completion
+- If `lint_course_memory.py` fails after updating `course_memory.json`, revise the memory JSON and rerun the linter before reporting completion
 - **Scanned PDF with no text layer**: after extraction, if the total slide text across the whole document is under ~500 characters (and there are non-trivially many pages), the source is almost certainly a scanned PDF. Stop and explain that scanned PDFs without a text layer need OCR first, which is out of scope for this skill. Suggest the user run an OCR tool (e.g., `ocrmypdf input.pdf output.pdf`) and retry.
 - **Very short deck (fewer than ~5 instructional slides)**: do not force the 3-to-8 chapter rule. Produce a single chapter that covers the whole deck, and still write `## 复习要点` and `## 思考题`. Forcing artificial chapter splits on tiny decks creates incoherent sections.
 - **Mixed-language source (e.g., English slides, Chinese speaker notes)**: still produce Chinese output. Translate technical terms to Chinese on first use and keep the bilingual `中文 (English)` introduction pattern; English-original quotations may be kept inline when translation would distort meaning.

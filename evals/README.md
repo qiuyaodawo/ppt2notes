@@ -10,6 +10,7 @@ evals/
 ├── evals.json         # prompts + assertions
 └── fixtures/          # input slide files referenced by evals.json
     ├── concept_heavy_zh.pptx
+    ├── concept_followup_zh.pptx
     ├── math_heavy_en.pdf
     ├── image_heavy.pptx
     ├── scanned.pdf
@@ -35,6 +36,7 @@ You have three options, from easiest to most rigorous:
 | 3 | `image-heavy-deck` | Image judgment: decorative vs instructional figures |
 | 4 | `scanned-pdf-graceful-failure` | Edge case: no text layer → clean abort instead of empty note |
 | 5 | `very-short-deck` | Edge case: deck < 5 slides → single-chapter fallback |
+| 6 | `course-memory-continuity` | Persistent memory across separate lecture runs |
 
 ## Running the evals
 

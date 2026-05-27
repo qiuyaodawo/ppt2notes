@@ -4,6 +4,8 @@
 >
 > 阅读建议：内容按主题重组，可按章跳读；术语首次出现时给出中英对照；关键图片配 `> **图解**` 说明。
 
+> **与前文的衔接**: {Only include when course_memory.json contains prior lectures and the current lecture genuinely continues them. Keep this to one or two sentences.}
+
 ---
 
 ## 1. {Chapter Topic}

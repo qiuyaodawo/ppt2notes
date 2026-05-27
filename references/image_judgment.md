@@ -1,6 +1,6 @@
 # Image Judgment
 
-In Step 4, inspect each extracted image using whatever image-reading capability the agent has available, then decide whether it should appear in the final note.
+In Step 5, inspect each extracted image using whatever image-reading capability the agent has available, then decide whether it should appear in the final note.
 
 ## Output structure
 

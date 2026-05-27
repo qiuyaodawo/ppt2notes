@@ -51,6 +51,40 @@ def write_concept_heavy_zh(out_dir: Path, Presentation) -> None:
     prs.save(out_dir / "concept_heavy_zh.pptx")
 
 
+def write_concept_followup_zh(out_dir: Path, Presentation) -> None:
+    prs = Presentation()
+    slides = [
+        (
+            "从线性模型到神经网络",
+            ["上一讲回顾：线性模型使用权重和偏置", "本讲目标：引入非线性表示", "多层结构提升表达能力"],
+            "承接上一讲的监督学习、损失函数和梯度下降。",
+        ),
+        (
+            "隐藏层",
+            ["隐藏层学习中间表示", "激活函数引入非线性", "层数影响表达能力"],
+            "提醒学生不要把隐藏层理解成黑箱魔法。",
+        ),
+        (
+            "训练神经网络",
+            ["损失函数仍然衡量预测误差", "梯度下降仍然更新参数", "反向传播用于高效求梯度"],
+            "强调这是上一讲优化思想的延伸。",
+        ),
+        (
+            "与过拟合的关系",
+            ["模型更复杂时更容易过拟合", "需要验证集", "可用正则化和早停"],
+            "联系上一讲模型评估。",
+        ),
+        (
+            "小结",
+            ["线性模型是基础", "神经网络扩展了表示能力", "训练目标和评估逻辑保持一致"],
+            "",
+        ),
+    ]
+    for title, bullets, notes in slides:
+        add_text_slide(prs, title, bullets, notes)
+    prs.save(out_dir / "concept_followup_zh.pptx")
+
+
 def render_png(fitz, path: Path, title: str, lines: list[str], width: int = 900, height: int = 520) -> None:
     doc = fitz.open()
     page = doc.new_page(width=width, height=height)
@@ -164,6 +198,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     write_concept_heavy_zh(out_dir, Presentation)
+    write_concept_followup_zh(out_dir, Presentation)
     write_image_heavy(out_dir, fitz, Presentation, Inches)
     write_tiny_deck(out_dir, Presentation)
     write_math_heavy_pdf(out_dir, fitz)

@@ -15,6 +15,7 @@ The output must be a usable study note, not a slide transcript.
 
 - On first appearance, write `中文 (English)`, for example `反向传播 (Backpropagation)`
 - After the first appearance, Chinese alone is usually enough
+- If `course_memory.json` already records that a term was introduced in a prior lecture, avoid a full re-introduction; use Chinese alone or a brief reminder unless the current lecture needs a precise reset
 - Keep common abbreviations such as `CNN`, `RNN`, `SGD`, and `Adam`
 - For abbreviations, first mention may include the full bilingual form, for example `卷积神经网络 (Convolutional Neural Network, CNN)`
 - Keep personal names in their standard original form
@@ -81,6 +82,22 @@ The output must be a usable study note, not a slide transcript.
 ## Speaker notes
 
 Speaker notes often contain high-value teaching context. Blend them into the prose instead of quoting them as a separate artifact.
+
+## Course continuity
+
+Always use `course_memory.json` as the continuity source. It should help the note sound like part of a course rather than an isolated document, but it must stay subordinate to the current source.
+
+When prior lectures exist and the current lecture clearly builds on them, add a short bridge after the note header:
+
+```markdown
+> **与前文的衔接**: 上一讲已经说明……本讲在此基础上……
+```
+
+- Keep the bridge to one or two sentences
+- Mention only prior context that helps the current lecture
+- Do not force a bridge for an independent lecture
+- Do not paste old lecture summaries into the note
+- Keep notation and terminology consistent with memory unless the current lecture explicitly changes them
 
 ## Boundaries for expansion
 
