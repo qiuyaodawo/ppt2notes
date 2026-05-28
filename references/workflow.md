@@ -196,7 +196,11 @@ Companion material rules:
     {
       "title": "2. Backpropagation",
       "slide_indices": [5, 6, 7, 8, 9],
-      "summary": "Derives gradient computation and weight updates through the chain rule."
+      "summary": "Derives gradient computation and weight updates through the chain rule.",
+      "deep_explanation_targets": [
+        "Why the chain rule lets the final loss be decomposed into local gradients",
+        "How gradient vanishing appears when many small derivatives are multiplied"
+      ]
     }
   ]
 }
@@ -211,6 +215,7 @@ Write this plan to `chapter_plan.json` in the active work directory before draft
 - Reordering is allowed if it improves topical flow
 - Do not split one slide across multiple chapters
 - Cover all non-empty instructional slides; title pages, agenda pages, and thank-you pages may be dropped
+- For each chapter, record `deep_explanation_targets` for central, repeated, later-dependent, formula-heavy, algorithmic, derivation-based, process-diagram, or easily confused topics
 - In directory mode, cover all primary lecture-slide files unless a file is clearly non-instructional; account for every question, lab, and code file in coverage even if it is not included in prose
 - Use course memory to clarify continuity references and terminology, but never let it override the current source material
 
@@ -248,6 +253,7 @@ Use `assets/note_template.md` as the output skeleton. Do not copy placeholder te
 - chapter summary
 - all text and notes from the listed slides
 - kept images for those slides (id + path + brief + role)
+- deep explanation targets from the chapter plan
 - previous chapter summary, if any
 - compact course memory briefing from Step 3
 ```
@@ -256,11 +262,14 @@ Use `assets/note_template.md` as the output skeleton. Do not copy placeholder te
 
 1. Turn slide bullets into connected prose
 2. Expand only where it helps learning
-3. Place image explanations after the relevant paragraph
-4. Rewrite formulas in LaTeX instead of relying on formula screenshots
-5. Use `###` subsections when a chapter is dense
-6. Use course memory for terminology, notation, and brief continuity bridges
-7. If course memory contains prior lectures and the current lecture clearly continues them, add a one- or two-sentence `> **与前文的衔接**` block after the note header
+3. Explain every `deep_explanation_targets` item carefully: state the problem, intuition, key steps or derivation when applicable, one example/comparison/pitfall, and the connection to the surrounding lecture
+4. Place image explanations after the relevant paragraph
+5. Rewrite formulas in LaTeX instead of relying on formula screenshots, and define symbols in prose
+6. Use `###` subsections when a chapter is dense
+7. Use course memory for terminology, notation, and brief continuity bridges
+8. If course memory contains prior lectures and the current lecture clearly continues them, add a one- or two-sentence `> **与前文的衔接**` block after the note header
+
+After drafting a chapter, compare it against its `deep_explanation_targets`. If a target is only named, translated, or restated from the slide, revise the chapter before moving on.
 
 ### Chapter template
 
@@ -364,6 +373,7 @@ print(f"Coverage report: {work_dir / 'coverage_report.json'}")
 
 Important:
 
+- Before running the linter, perform a depth self-check against `chapter_plan.json`: every `deep_explanation_targets` item should have a substantive explanation in the corresponding chapter, not just a bullet restatement
 - `img["path"]` is relative to `work_dir`
 - Clean up only files created by this workflow
 - If `lint_note.py` fails, fix the Markdown structure or image paths and rerun it before reporting completion

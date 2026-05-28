@@ -103,6 +103,20 @@ When prior lectures exist and the current lecture clearly builds on them, add a 
 
 The point of expanding the source material is to lower the friction for a student reading the slide deck on their own. Use that test, not a checklist, to decide whether a sentence belongs.
 
+## Important and difficult material
+
+Before writing each chapter, identify the topics that need careful explanation. Treat a topic as important or difficult when it:
+
+- Is central to the lecture objective or appears repeatedly
+- Supports later concepts, examples, labs, or exam-style questions
+- Contains formulas, algorithms, derivations, proofs, state machines, grammar rules, execution traces, or process diagrams
+- Is compressed into a conclusion on the slide without the missing reasoning steps
+- Is likely to confuse beginners because two terms, methods, or notations look similar
+
+For each such topic, do more than summarize. Explain what problem it addresses, the intuition behind the method, the key steps or derivation, one concrete example/comparison/pitfall, and how it connects to the surrounding lecture content. For formulas, define the symbols and explain why the transformation or result is valid. For algorithms and procedures, explain the input, output, main loop or decision points, and a common failure or edge case.
+
+A short paragraph is fine for a minor slide point. A central or difficult topic that only restates the slide bullets should be revised before finalizing the note.
+
 Allowed expansions, and why each helps:
 
 - **Brief historical background** — anchors a concept in time so the student remembers when and why it appeared

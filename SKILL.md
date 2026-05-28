@@ -49,6 +49,8 @@ Writing contract:
 - Write narrative study notes, not slide transcription
 - Reorganize content by topic
 - Expand carefully with background, derivations, examples, and common pitfalls only when they help the learner understand the original material
+- Identify important or difficult material before drafting. Treat central, repeated, later-dependent, formula-heavy, algorithmic, derivation-based, process-diagram, or easily confused topics as deep explanation targets.
+- For each deep explanation target, explain the problem it addresses, the intuition, the key steps or derivation when applicable, one concrete example/comparison/pitfall, and how it connects to the surrounding lecture. Revise any chapter that only restates slide bullets for these targets.
 - Introduce important terms on first use with Chinese plus English, for example `反向传播 (Backpropagation)`
 - Rewrite formulas in LaTeX
 - Keep only informative images and explain them in text

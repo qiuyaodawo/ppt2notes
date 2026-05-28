@@ -17,6 +17,7 @@
         "At least one term is introduced bilingually using the `中文 (English)` pattern",
         "The 思考题 section contains between 5 and 10 numbered items",
         "Output body is predominantly narrative prose (more sentence-ending punctuation `。` than standalone bullet lines starting with `- ` or `• `)",
+        "Important or difficult topics are not merely restated from slide bullets; they include intuition plus at least one example, comparison, derivation step, or common pitfall",
         "Every `![...](...)` image reference resolves to an actual file in the `concept_heavy_zh_assets/` directory",
         "`course_memory.json` exists next to the source file",
         "`course_memory.json` contains a lecture record whose `source_file` is `concept_heavy_zh.pptx`"
@@ -32,6 +33,7 @@
         "Output file `math_heavy_en_notes.md` exists",
         "Output contains at least one block-level LaTeX formula delimited by `$$ ... $$`",
         "Output contains at least three LaTeX expressions total (inline `$...$` or block `$$...$$`)",
+        "Important formulas are explained with symbol definitions and the reasoning or derivation step that makes the formula useful",
         "The main body (excluding code blocks and LaTeX) is predominantly Chinese characters",
         "At least two English technical terms get bilingual first-use introduction in the `中文 (English)` form",
         "No image reference in the output points to a file that is purely a formula screenshot (formula images should be rewritten as LaTeX, not embedded)",
@@ -118,6 +120,7 @@
         "The question PDF is reflected either in an example, checkpoint, or `思考题` item",
         "The lab PDF is reflected as practical guidance or common pitfalls",
         "The C example is quoted or explained only as a focused snippet, not pasted wholesale",
+        "`chapter_plan.json` records `deep_explanation_targets` for central, formula-heavy, algorithmic, or easily confused topics",
         "`chapter_plan.json` and `image_decisions.json` exist in the centralized work directory"
       ]
     }
