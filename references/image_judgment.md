@@ -1,6 +1,6 @@
 # Image Judgment
 
-In Step 5, inspect each extracted image using whatever image-reading capability the agent has available, then decide whether it should appear in the final note.
+In Step 5, inspect each extracted image using whatever image-reading capability the agent has available, then decide whether it should appear in the final note. When `image_manifest.json` exists, use it as the screening table before opening images: it records page number, dimensions, position, coverage, extracted/skipped status, and threshold reasons.
 
 ## Output structure
 
@@ -35,13 +35,15 @@ Allowed roles:
 
 ## Decision procedure
 
-1. Inspect the image itself
-2. Check `context_text` from the intermediate JSON
-3. Ask three questions:
+1. Read `image_manifest.json` if present
+2. Drop images already marked `skipped` unless there is a strong reason to re-extract them
+3. Inspect the remaining image itself
+4. Check `context_text` from the intermediate JSON
+5. Ask three questions:
    - Does the image communicate something important that the slide text does not fully capture?
    - Would a learner miss a key concept if this image disappeared?
    - Can the agent explain the image accurately in one or two Chinese sentences?
-4. Decide:
+6. Decide:
    - If all three answers are no, drop it
    - If any answer is yes, keep it and write a useful `brief`
 
@@ -75,15 +77,18 @@ Bad:
 - Low-resolution or badly cropped images can usually be dropped
 - Composite figures with multiple small panels should usually be kept as one unit if the relationships matter
 
-## Optional persistence
+## Required persistence
 
-The agent may write `image_decisions.json` in the work directory for debugging and reuse:
+Write `image_decisions.json` in the active work directory for debugging, auditability, and regeneration. Do this even when every image is dropped:
 
 ```json
 {
+  "schema_version": "1.0",
   "decisions": [
-    {"id": "slide1_img1", "decision": "drop", "role": "decoration", "brief": ""},
-    {"id": "slide3_img1", "decision": "keep", "role": "diagram", "brief": "..."}
+    {"id": "slide1_img1", "source_file": "PartA.pdf", "decision": "drop", "role": "decoration", "brief": ""},
+    {"id": "slide3_img1", "source_file": "PartA.pdf", "decision": "keep", "role": "diagram", "brief": "..."}
   ]
 }
 ```
+
+If the workflow later deletes dropped raw images, keep their decision records. The decision file is the audit trail.

@@ -14,7 +14,13 @@ evals/
     ├── math_heavy_en.pdf
     ├── image_heavy.pptx
     ├── scanned.pdf
-    └── tiny_deck.pptx
+    ├── tiny_deck.pptx
+    └── Lec01/
+        ├── 01-PartA.pdf
+        ├── 02-PartB.pdf
+        ├── Q0.1.pdf
+        ├── Lab01.pdf
+        └── scanner_example.c
 ```
 
 `fixtures/` is **not** checked in — each test case names a file, and you can either generate synthetic fixtures or supply your own real decks.
@@ -37,6 +43,7 @@ You have three options, from easiest to most rigorous:
 | 4 | `scanned-pdf-graceful-failure` | Edge case: no text layer → clean abort instead of empty note |
 | 5 | `very-short-deck` | Edge case: deck < 5 slides → single-chapter fallback |
 | 6 | `course-memory-continuity` | Persistent memory across separate lecture runs |
+| 7 | `lecture-directory-mode` | One lecture folder with multiple slide PDFs, question PDF, lab PDF, and code example |
 
 ## Running the evals
 
@@ -56,4 +63,4 @@ For comparative quality checks, run each prompt in a fresh agent session and man
 
 ## Adding new evals
 
-When a real-world failure surfaces something the existing tests do not catch, add a sixth eval rather than over-extending an existing one. Each eval should have a single clear thing it is testing — that keeps the grading signal interpretable when results regress.
+When a real-world failure surfaces something the existing tests do not catch, add a new eval rather than over-extending an existing one. Each eval should have a single clear thing it is testing — that keeps the grading signal interpretable when results regress.

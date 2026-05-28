@@ -4,13 +4,19 @@ Course memory is a required persistent state file for this skill. It keeps lectu
 
 ## File location
 
-Default path:
+Single-file default path:
 
 ```text
 {source_directory}/course_memory.json
 ```
 
-Use this same file for every lecture in the same course folder. If the user explicitly provides a different course memory path, use that path instead.
+Lecture-directory default path:
+
+```text
+{course_root}/course_memory.json
+```
+
+Use the same memory file for every lecture in the same course. For a course organized as `Course/Lec01`, `Course/Lec02`, etc., the memory belongs at `Course/course_memory.json`, not inside each `LecXX` folder. If the user explicitly provides `--memory-path`, use that path instead. If the user provides `--course-root`, resolve the default memory path from it.
 
 ## Required behavior
 
@@ -20,7 +26,7 @@ Always perform these actions for every successful note-generation task:
 2. If it does not exist, initialize an empty memory object using `assets/course_memory_schema.json`
 3. Use the memory while planning and writing the current note
 4. Update and write `course_memory.json` after the note passes structural validation
-5. Run `python scripts/lint_course_memory.py --memory course_memory.json`
+5. Run `python scripts/lint_course_memory.py --memory <resolved memory path>`
 
 Do not treat course memory as a batch-only feature. A single lecture still initializes useful memory for future lectures.
 
@@ -99,7 +105,7 @@ If a `source_file` already exists in `lectures`, replace that record instead of 
 After writing the file, validate it:
 
 ```text
-python scripts/lint_course_memory.py --memory course_memory.json
+python scripts/lint_course_memory.py --memory <resolved memory path>
 ```
 
 Fix validation failures before reporting completion.

@@ -188,6 +188,73 @@ def write_scanned_pdf(out_dir: Path, fitz) -> None:
     png.unlink(missing_ok=True)
 
 
+def write_simple_pdf(path: Path, fitz, title: str, body: list[str]) -> None:
+    doc = fitz.open()
+    page = doc.new_page(width=842, height=595)
+    page.insert_text((72, 72), title, fontsize=22)
+    y = 122
+    for line in body:
+        page.insert_text((72, y), line, fontsize=14)
+        y += 32
+    doc.save(path)
+    doc.close()
+
+
+def write_lecture_directory(out_dir: Path, fitz) -> None:
+    lec_dir = out_dir / "Lec01"
+    lec_dir.mkdir(parents=True, exist_ok=True)
+    write_simple_pdf(
+        lec_dir / "01-PartA.pdf",
+        fitz,
+        "Lexical Analysis",
+        [
+            "Tokens, lexemes, and patterns define scanner output.",
+            "Regular expressions describe token classes.",
+            "DFA simulation recognizes the longest valid token.",
+        ],
+    )
+    write_simple_pdf(
+        lec_dir / "02-PartB.pdf",
+        fitz,
+        "Scanner Implementation",
+        [
+            "The scanner skips whitespace and comments.",
+            "A symbol table stores identifiers.",
+            "Error handling reports invalid characters with line numbers.",
+        ],
+    )
+    write_simple_pdf(
+        lec_dir / "Q0.1.pdf",
+        fitz,
+        "Question 0.1",
+        [
+            "Given a token specification, identify which strings are accepted.",
+            "Explain how longest-match affects keyword recognition.",
+        ],
+    )
+    write_simple_pdf(
+        lec_dir / "Lab01.pdf",
+        fitz,
+        "Lab 01",
+        [
+            "Implement a scanner for identifiers, integers, and operators.",
+            "Test the scanner with valid and invalid source snippets.",
+        ],
+    )
+    (lec_dir / "scanner_example.c").write_text(
+        "\n".join(
+            [
+                "#include <ctype.h>",
+                "int is_identifier_start(int ch) {",
+                "    return isalpha(ch) || ch == '_';",
+                "}",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate ppt2notes eval fixtures")
     parser.add_argument("--out-dir", default="evals/fixtures", help="Fixture output directory")
@@ -203,6 +270,7 @@ def main() -> int:
     write_tiny_deck(out_dir, Presentation)
     write_math_heavy_pdf(out_dir, fitz)
     write_scanned_pdf(out_dir, fitz)
+    write_lecture_directory(out_dir, fitz)
 
     print(f"Generated eval fixtures in: {out_dir}")
     return 0

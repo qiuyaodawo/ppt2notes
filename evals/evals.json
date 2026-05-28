@@ -101,6 +101,25 @@
         "`course_memory.json` includes continuity data such as `last_lecture_summary` and non-empty `open_threads`",
         "The second note uses prior terms or concepts consistently without pasting the first note's full content"
       ]
+    },
+    {
+      "id": 7,
+      "name": "lecture-directory-mode",
+      "prompt": "这个 Lec01 文件夹就是一讲，里面有两个 Part PDF、题目、Lab 和一个 C 示例。帮我整理成一份中文讲义。",
+      "files": ["evals/fixtures/Lec01"],
+      "expected_output": "A single Chinese study note named Lec01_notes.md saved in the lecture directory. The run uses lecture directory mode, writes a centralized .ppt2notes_work/Lec01 manifest, keeps course_memory.json at the course root, and incorporates questions/labs/code examples where relevant.",
+      "assertions": [
+        "Output file `Lec01_notes.md` exists in the `Lec01` directory",
+        "A centralized `.ppt2notes_work/Lec01/lecture_manifest.json` exists outside the lecture directory",
+        "A `.ppt2notes_work/Lec01/coverage_report.json` exists and lists every source file: `01-PartA.pdf`, `02-PartB.pdf`, `Q0.1.pdf`, `Lab01.pdf`, and `scanner_example.c`",
+        "The coverage report records page counts or character counts for every source file",
+        "`course_memory.json` exists at the course root, not inside `Lec01`",
+        "The note's main chapters are organized by topic rather than by raw file names",
+        "The question PDF is reflected either in an example, checkpoint, or `思考题` item",
+        "The lab PDF is reflected as practical guidance or common pitfalls",
+        "The C example is quoted or explained only as a focused snippet, not pasted wholesale",
+        "`chapter_plan.json` and `image_decisions.json` exist in the centralized work directory"
+      ]
     }
   ]
 }

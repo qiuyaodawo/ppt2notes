@@ -42,6 +42,7 @@ This mode applies when the agent cannot run extraction scripts but can directly 
 | `.pdf` | Yes | Read the PDF directly and emulate the intermediate structure in memory |
 | `.pptx` | Usually no | Tell the user to resave as PDF and retry |
 | `.ppt` | No | Tell the user to resave as `.pptx` or `.pdf` and retry |
+| lecture directory | Usually no | Ask the user to run in a scripted environment, or provide a generated `lecture_manifest.json` plus extracted text |
 
 ### Fallback workflow for PDF
 

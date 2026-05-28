@@ -32,20 +32,33 @@ If the agent cannot run shell commands or Python, see `platform_fallbacks.md`.
 
 ## Step 1 - Detect input format
 
-**Why this step exists:** The three input formats need different toolchains, and `.ppt` (old binary format) cannot be parsed by `python-pptx` directly — it needs LibreOffice to convert it first. Branching by extension up front is cleaner than letting downstream code blow up on an unsupported file.
+**Why this step exists:** The three file formats need different toolchains, and a lecture directory needs a manifest before note planning. `.ppt` (old binary format) cannot be parsed by `python-pptx` directly — it needs LibreOffice to convert it first. Branching up front is cleaner than letting downstream code blow up on an unsupported input.
 
 ```python
-ext = Path(input_file).suffix.lower()
-if ext == ".ppt":
+source = Path(input_path)
+if source.is_dir():
+    mode = "lecture_directory"
+    run("python scripts/prepare_lecture.py --input-dir <LecXX> --course-root <course-root> --work-dir <course-root>/.ppt2notes_work")
+elif source.suffix.lower() == ".ppt":
     converted = run("python scripts/convert_ppt_to_pptx.py --input <file> --output <tmp.pptx>")
     process_as_pptx(converted)
-elif ext == ".pptx":
-    process_as_pptx(input_file)
-elif ext == ".pdf":
-    process_as_pdf(input_file)
+elif source.suffix.lower() == ".pptx":
+    process_as_pptx(source)
+elif source.suffix.lower() == ".pdf":
+    process_as_pdf(source)
 else:
     abort("Unsupported format")
 ```
+
+### Lecture directory mode
+
+Use this mode when the user gives a directory such as `Lec01/` and that directory represents one lecture. The directory may contain several Part PDFs/PPTX files, question PDFs, lab sheets, and code examples. Run `prepare_lecture.py` first to create `lecture_manifest.json` and `coverage_report.json`; those files become the formal input to the rest of the workflow.
+
+Resolve paths as follows:
+
+- `--course-root`: the course-level folder that contains all `LecXX` folders. If the user does not specify it, use `input_dir.parent`.
+- `--memory-path`: an explicit memory path, if provided by the user. It overrides `--course-root`.
+- `--work-dir`: default to `<course-root>/.ppt2notes_work`.
 
 ## Step 2 - Extract the intermediate JSON
 
@@ -53,14 +66,24 @@ else:
 
 ### Working directory convention
 
-Given `/path/to/lecture01.pptx`:
+Given `/path/to/lecture01.pptx`, prefer a centralized work directory:
 
-- Work directory: `/path/to/lecture01_assets/`
-- Intermediate JSON: `/path/to/lecture01_assets/intermediate.json`
-- Extracted images: `/path/to/lecture01_assets/slide{N}_img{M}.{ext}`
+- Work directory: `/path/to/.ppt2notes_work/lecture01/`
+- Intermediate JSON: `/path/to/.ppt2notes_work/lecture01/intermediate.json`
+- Image manifest: `/path/to/.ppt2notes_work/lecture01/image_manifest.json`
+- Extracted images: `/path/to/.ppt2notes_work/lecture01/slide{N}_img{M}.{ext}`
 - Final note: `/path/to/lecture01_notes.md`
 
-Reference images in the note using relative paths such as `lecture01_assets/slide12_img1.png`.
+For a lecture directory `/course/Lec01/`:
+
+- Work directory: `/course/.ppt2notes_work/Lec01/`
+- Manifest: `/course/.ppt2notes_work/Lec01/lecture_manifest.json`
+- Coverage report: `/course/.ppt2notes_work/Lec01/coverage_report.json`
+- Final note: `/course/Lec01/Lec01_notes.md`
+
+Keep raw extraction artifacts under `.ppt2notes_work/`. If the final note embeds images, copy only retained instructional images to a small final assets location and reference those relative paths from the note. Do not leave raw per-PDF `_assets` directories in the lecture folder.
+
+`extract_pdf.py` writes `intermediate.json` and `image_manifest.json`; `extract_pptx.py` writes `intermediate.json`. Both print only a compact summary by default; use `--print-json` only if stdout JSON is explicitly needed. Use `--quiet` in batch or directory runs.
 
 ### Post-extraction validation
 
@@ -97,18 +120,24 @@ Always follow `course_memory.md`.
 
 ### Memory path
 
-Default:
+Single-file default:
 
 ```text
 source_path.parent / "course_memory.json"
 ```
 
-If the user explicitly provides a course memory path, use that path instead.
+Lecture-directory default:
+
+```text
+course_root / "course_memory.json"
+```
+
+If the user explicitly provides a course memory path, use that path instead. In directory mode, `prepare_lecture.py` records the resolved memory path in `lecture_manifest.json`; use that exact value.
 
 ### Required action
 
 ```python
-memory_path = source_path.parent / "course_memory.json"
+memory_path = resolved_memory_path
 
 if memory_path.exists():
     course_memory = json.load(open(memory_path, encoding="utf-8"))
@@ -142,7 +171,17 @@ Do not load previous full generated notes for continuity. `course_memory.json` i
 
 ### Input
 
-Read `{index, title, text, notes}` from `intermediate.json` plus the compact memory briefing from Step 3. Do not inspect images yet.
+Single-file mode: read `{index, title, text, notes}` from `intermediate.json` plus the compact memory briefing from Step 3. Do not inspect images yet.
+
+Directory mode: read `lecture_manifest.json`, then read the listed `intermediate.json` files and code samples. Preserve source ordering from the manifest, but chapter organization should still be topical.
+
+Companion material rules:
+
+- `lecture_slides`: primary source for chapter structure
+- `questions`: fold into examples, checkpoints, or final `思考题`
+- `code_examples`: quote small relevant snippets and explain behavior
+- `labs`: connect practical tasks to the concepts they exercise
+- `companion_material`: include only if it directly supports a chapter
 
 ### Output format
 
@@ -163,6 +202,8 @@ Read `{index, title, text, notes}` from `intermediate.json` plus the compact mem
 }
 ```
 
+Write this plan to `chapter_plan.json` in the active work directory before drafting the note. In directory mode, each chapter entry should also include a `sources` list that names the source files it uses. Then update `coverage_report.json` so every source shows whether it was included and which chapters used it.
+
 ### Grouping rules
 
 - Prefer 3 to 8 chapters
@@ -170,6 +211,7 @@ Read `{index, title, text, notes}` from `intermediate.json` plus the compact mem
 - Reordering is allowed if it improves topical flow
 - Do not split one slide across multiple chapters
 - Cover all non-empty instructional slides; title pages, agenda pages, and thank-you pages may be dropped
+- In directory mode, cover all primary lecture-slide files unless a file is clearly non-instructional; account for every question, lab, and code file in coverage even if it is not included in prose
 - Use course memory to clarify continuity references and terminology, but never let it override the current source material
 
 **Short-deck fallback:** if the deck has fewer than ~5 instructional slides after dropping cover/agenda/thank-you pages, ignore the "3 to 8 chapters" rule and produce a single chapter that covers the whole deck. Splitting a 4-slide deck into 3 chapters yields three thin sections that hurt readability more than they help.
@@ -187,9 +229,11 @@ See `image_judgment.md`.
 Key rules:
 
 - Use whatever image-reading capability the agent has available
+- Start from `image_manifest.json` when present, because it records extracted/skipped images, dimensions, position, coverage, and threshold decisions
 - Produce `{decision, role, brief}` for each image
 - Decorative images should be dropped
 - Informative charts, formulas, diagrams, screenshots, and content-relevant photos should usually be kept
+- Write the final image decisions to `image_decisions.json` in the active work directory before drafting image blocks
 
 ## Step 6 - Write chapter-based notes
 
@@ -297,6 +341,10 @@ memory_path.write_text(
 )
 run(["python", "scripts/lint_course_memory.py", "--memory", str(memory_path)])
 
+write_json(work_dir / "chapter_plan.json", chapter_plan)
+write_json(work_dir / "image_decisions.json", image_decisions)
+update_coverage_report(work_dir / "coverage_report.json", chapter_plan, final_md)
+
 for img in image_decisions:
     if img["decision"] == "drop":
         (work_dir / img["path"]).unlink(missing_ok=True)
@@ -309,6 +357,9 @@ print(f"Updated course memory: {memory_path}")
 print(f"Chapters: {n_chapters}")
 print(f"Estimated characters: ~{char_count}")
 print(f"Kept images: {n_kept} / {n_total}")
+print(f"Chapter plan: {work_dir / 'chapter_plan.json'}")
+print(f"Image decisions: {work_dir / 'image_decisions.json'}")
+print(f"Coverage report: {work_dir / 'coverage_report.json'}")
 ```
 
 Important:

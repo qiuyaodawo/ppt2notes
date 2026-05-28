@@ -2,7 +2,7 @@
 """Extract a `.pptx` into the shared intermediate JSON plus image assets.
 
 Usage:
-    python extract_pptx.py --input <file.pptx> --out-dir <work-dir> [--assets-subdir assets]
+    python extract_pptx.py --input <file.pptx> --out-dir <work-dir> [--assets-subdir assets] [--quiet] [--print-json]
 
 Behavior:
     - One output item per slide
@@ -10,6 +10,9 @@ Behavior:
     - Title prefers slide.shapes.title, then falls back to the first short line
     - Notes come from the speaker notes area when available
     - Images are written to the assets directory and get a rough position label
+    - The intermediate JSON is written to <out-dir>/intermediate.json
+    - A compact extraction summary is printed to stdout by default
+    - Full JSON is printed only when --print-json is passed
 
 Exit codes:
     0  success
@@ -31,6 +34,18 @@ from _schema import ImageRef, Intermediate, Slide, Source  # noqa: E402
 
 # 1 inch = 914400 EMU
 EMU_PER_INCH = 914400
+
+
+def configure_utf8_stdio() -> None:
+    """Avoid Windows GBK console crashes when output contains Unicode text."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
 
 def iter_shapes(shapes):
@@ -285,10 +300,17 @@ def extract(input_path: Path, out_dir: Path, assets_subdir: str = "") -> Interme
 
 
 def main() -> int:
+    configure_utf8_stdio()
     ap = argparse.ArgumentParser(description="Extract a .pptx into the ppt2notes intermediate JSON")
     ap.add_argument("--input", required=True, help="Input PPTX path")
     ap.add_argument("--out-dir", required=True, help="Working directory")
     ap.add_argument("--assets-subdir", default="", help="Optional subdirectory for extracted images")
+    ap.add_argument("--quiet", action="store_true", help="Suppress the default summary output")
+    ap.add_argument(
+        "--print-json",
+        action="store_true",
+        help="Print the full intermediate JSON to stdout. By default only a summary is printed.",
+    )
     args = ap.parse_args()
 
     input_path = Path(args.input).expanduser().resolve()
@@ -300,11 +322,17 @@ def main() -> int:
     json_path = out_dir / "intermediate.json"
     json_path.write_text(inter.to_json(), encoding="utf-8")
 
-    print(inter.to_json())
-    print(f"\nIntermediate JSON written to: {json_path}", file=sys.stderr)
-    print(f"  Slides: {len(inter.slides)}", file=sys.stderr)
     n_imgs = sum(len(s.images) for s in inter.slides)
-    print(f"  Extracted images: {n_imgs}", file=sys.stderr)
+    if args.print_json:
+        print(inter.to_json())
+        if not args.quiet:
+            print(f"Intermediate JSON written to: {json_path}", file=sys.stderr)
+            print(f"Slides: {len(inter.slides)}", file=sys.stderr)
+            print(f"Extracted images: {n_imgs}", file=sys.stderr)
+    elif not args.quiet:
+        print(f"Intermediate JSON written to: {json_path}")
+        print(f"Slides: {len(inter.slides)}")
+        print(f"Extracted images: {n_imgs}")
     return 0
 
 
