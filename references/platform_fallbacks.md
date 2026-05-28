@@ -29,7 +29,7 @@ This skill is intended to be usable across many agent runtimes. The agent should
 
 ## Scripted path
 
-Use the standard 7-step workflow from `SKILL.md`.
+Use the standard workflow from `SKILL.md`, including default-on image extraction, image judgment, and final-note embedding for kept images.
 
 ## Native multimodal fallback
 
@@ -52,7 +52,7 @@ Step 1: verify the input is a PDF
 Step 2: skip bundled extraction scripts
         read the PDF directly
         build an equivalent in-memory structure with page text, inferred titles, and image observations
-Step 3-7: follow the normal reasoning workflow, including course memory
+Step 3-7: follow the normal reasoning workflow, including course memory and image judgment
 Step 8: if file writing is available, write the Markdown note and course_memory.json
         otherwise return both the Markdown and the updated course_memory.json content directly in the response
 ```
@@ -61,7 +61,8 @@ Step 8: if file writing is available, write the Markdown note and course_memory.
 
 If images cannot be exported as files:
 
-- Prefer text-only image explanations
+- Treat this as a fallback limitation, not the default behavior
+- Prefer text-only image explanations only when image files truly cannot be written or referenced
 - Optionally cite the original page number, for example `(see the figure on page 12 of the source PDF)`
 
 Add a short note near the end of the generated Markdown:

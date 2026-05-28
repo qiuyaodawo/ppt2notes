@@ -59,6 +59,12 @@ For structural checks after a note is generated, run:
 python scripts/lint_note.py --note path/to/generated_notes.md --min-chapters 3 --max-chapters 8
 ```
 
+When `image_decisions.json` exists, include it so kept images are verified against the Markdown:
+
+```bash
+python scripts/lint_note.py --note path/to/generated_notes.md --min-chapters 3 --max-chapters 8 --image-decisions path/to/image_decisions.json
+```
+
 For comparative quality checks, run each prompt in a fresh agent session and manually score the assertions in `evals.json`. Keep generated outputs in a sibling workspace directory such as `../ppt2notes-workspace/iteration-1/eval-<N>/outputs/` so the skill directory stays clean.
 
 ## Adding new evals

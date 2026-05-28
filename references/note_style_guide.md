@@ -77,6 +77,7 @@ The output must be a usable study note, not a slide transcript.
 
 - Put the explanation block before the image
 - Keep the path relative, usually `{original_stem}_assets/...`
+- Embed every image marked `keep` in `image_decisions.json`; preserve the extracted basename such as `slide12_img1.png` when copying to final assets
 - Only keep an image when it contributes meaning that text alone would likely lose
 
 ## Speaker notes

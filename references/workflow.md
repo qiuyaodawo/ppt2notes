@@ -81,9 +81,11 @@ For a lecture directory `/course/Lec01/`:
 - Coverage report: `/course/.ppt2notes_work/Lec01/coverage_report.json`
 - Final note: `/course/Lec01/Lec01_notes.md`
 
-Keep raw extraction artifacts under `.ppt2notes_work/`. If the final note embeds images, copy only retained instructional images to a small final assets location and reference those relative paths from the note. Do not leave raw per-PDF `_assets` directories in the lecture folder.
+Image extraction is default-on. Do not pass `--no-images` unless the user explicitly asks for a text-only note or the runtime cannot extract images.
 
-`extract_pdf.py` writes `intermediate.json` and `image_manifest.json`; `extract_pptx.py` writes `intermediate.json`. Both print only a compact summary by default; use `--print-json` only if stdout JSON is explicitly needed. Use `--quiet` in batch or directory runs.
+Keep raw extraction artifacts under `.ppt2notes_work/`. For every retained instructional image, copy only that image to a small final assets location and reference the final relative path from the note. Do not leave raw per-PDF `_assets` directories in the lecture folder.
+
+`extract_pdf.py` writes `intermediate.json` and `image_manifest.json`; `extract_pptx.py` writes image refs into `intermediate.json`. Both print only a compact summary by default; use `--print-json` only if stdout JSON is explicitly needed. Use `--quiet` in batch or directory runs.
 
 ### Post-extraction validation
 
@@ -233,11 +235,11 @@ See `image_judgment.md`.
 
 Key rules:
 
-- Use whatever image-reading capability the agent has available
+- Use whatever image-reading capability the agent has available. If images were extracted but no visual inspection is available, use `image_manifest.json`, image dimensions/positions, filenames, and `context_text` as a fallback rather than skipping `image_decisions.json`.
 - Start from `image_manifest.json` when present, because it records extracted/skipped images, dimensions, position, coverage, and threshold decisions
-- Produce `{decision, role, brief}` for each image
+- Produce `{id, path, decision, role, brief}` for each image
 - Decorative images should be dropped
-- Informative charts, formulas, diagrams, screenshots, and content-relevant photos should usually be kept
+- Informative charts, formulas, diagrams, screenshots, and content-relevant photos must be kept unless they are unreadable, redundant, or better represented as text/code/formulas
 - Write the final image decisions to `image_decisions.json` in the active work directory before drafting image blocks
 
 ## Step 6 - Write chapter-based notes
@@ -263,13 +265,13 @@ Use `assets/note_template.md` as the output skeleton. Do not copy placeholder te
 1. Turn slide bullets into connected prose
 2. Expand only where it helps learning
 3. Explain every `deep_explanation_targets` item carefully: state the problem, intuition, key steps or derivation when applicable, one example/comparison/pitfall, and the connection to the surrounding lecture
-4. Place image explanations after the relevant paragraph
+4. Embed every `keep` image from `image_decisions.json` near the paragraph where it is explained
 5. Rewrite formulas in LaTeX instead of relying on formula screenshots, and define symbols in prose
 6. Use `###` subsections when a chapter is dense
 7. Use course memory for terminology, notation, and brief continuity bridges
 8. If course memory contains prior lectures and the current lecture clearly continues them, add a one- or two-sentence `> **与前文的衔接**` block after the note header
 
-After drafting a chapter, compare it against its `deep_explanation_targets`. If a target is only named, translated, or restated from the slide, revise the chapter before moving on.
+After drafting a chapter, compare it against its `deep_explanation_targets` and kept images. If a target is only named, translated, or restated from the slide, revise the chapter before moving on. If a kept image is not embedded with a nearby `> **图解(...)**` block, copy/reference the image or revise the decision before moving on.
 
 ### Chapter template
 
@@ -321,6 +323,8 @@ Requirements:
 ```python
 output_path = source_path.with_name(f"{source_path.stem}_notes.md")
 output_path.write_text(final_md, encoding="utf-8")
+image_decisions_path = work_dir / "image_decisions.json"
+write_json(image_decisions_path, image_decisions)
 
 # Reuse the short-deck fallback decision from Step 4.
 lint_min = 1 if is_short_deck else 3
@@ -333,6 +337,8 @@ run([
     str(lint_min),
     "--max-chapters",
     "8",
+    "--image-decisions",
+    str(image_decisions_path),
 ])
 
 # After linting passes, update course_memory.json according to course_memory.md.
@@ -351,7 +357,6 @@ memory_path.write_text(
 run(["python", "scripts/lint_course_memory.py", "--memory", str(memory_path)])
 
 write_json(work_dir / "chapter_plan.json", chapter_plan)
-write_json(work_dir / "image_decisions.json", image_decisions)
 update_coverage_report(work_dir / "coverage_report.json", chapter_plan, final_md)
 
 for img in image_decisions:
@@ -375,6 +380,7 @@ Important:
 
 - Before running the linter, perform a depth self-check against `chapter_plan.json`: every `deep_explanation_targets` item should have a substantive explanation in the corresponding chapter, not just a bullet restatement
 - `img["path"]` is relative to `work_dir`
+- Preserve the extracted image basename when copying a kept image to final assets, so `lint_note.py --image-decisions` can match the decision to the Markdown image target
 - Clean up only files created by this workflow
 - If `lint_note.py` fails, fix the Markdown structure or image paths and rerun it before reporting completion
 - Do not update `course_memory.json` until the note has passed `lint_note.py`

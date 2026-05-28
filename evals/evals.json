@@ -51,6 +51,7 @@
         "Output file `image_heavy_notes.md` exists",
         "Number of `![...](...)` image references in the output is strictly less than the number of image files originally extracted into `image_heavy_assets/`",
         "Every kept image is preceded (within 5 lines above) by a `> **图解(图 X-Y,<role>):**` explanation block",
+        "Every `decision: keep` entry in `.ppt2notes_work/image_heavy/image_decisions.json` is embedded in `image_heavy_notes.md`",
         "Allowed `<role>` values in 图解 blocks are one of: chart, formula, diagram, screenshot, photo",
         "No kept image has the role `decoration`",
         "Output contains both `## 复习要点` and `## 思考题`",

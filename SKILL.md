@@ -42,7 +42,7 @@ Output:
 - `course_memory.json`, created or updated on every successful run. In directory mode, default it to the course root, not the `LecXX` folder.
 - A centralized work directory, normally `.ppt2notes_work/`, containing extraction artifacts, manifests, coverage, chapter plans, and image decisions
 - A single Markdown document in Chinese
-- Image references pointing only to retained instructional images. Do not leave one `_assets` directory per source PDF unless the user explicitly wants raw extraction artifacts preserved.
+- Image-aware output by default: extract images, judge every extracted image, and embed every retained instructional image in the final note. Do not leave one `_assets` directory per source PDF unless the user explicitly wants raw extraction artifacts preserved.
 
 Writing contract:
 
@@ -53,7 +53,7 @@ Writing contract:
 - For each deep explanation target, explain the problem it addresses, the intuition, the key steps or derivation when applicable, one concrete example/comparison/pitfall, and how it connects to the surrounding lecture. Revise any chapter that only restates slide bullets for these targets.
 - Introduce important terms on first use with Chinese plus English, for example `反向传播 (Backpropagation)`
 - Rewrite formulas in LaTeX
-- Keep only informative images and explain them in text
+- Keep every informative image unless the user explicitly disables images, and explain each kept image in text
 - Always end with `## 复习要点` and `## 思考题`
 - Always use course memory for continuity: read or initialize the resolved memory path before planning, use it while writing, and update it after the note passes validation
 
@@ -76,15 +76,15 @@ Follow the full workflow in `references/workflow.md`. The required high-level se
 
 1. Detect available capabilities and input format, including whether the input is a lecture directory
 2. Convert `.ppt` to `.pptx` when needed
-3. Extract normalized intermediate representations into a centralized work directory
+3. Extract normalized intermediate representations and images into a centralized work directory unless the user explicitly disables images
 4. Read or initialize course memory using `--course-root` / `--memory-path` rules
 5. Build and save `chapter_plan.json` from text, notes, companion materials, and compact course memory
-6. Judge images with help from `image_manifest.json` and save `image_decisions.json`
-7. Generate chapter-based study notes
-8. Add review aids, write output, validate the Markdown, update course memory, update `coverage_report.json`, and clean temporary artifacts
+6. Judge images with help from `image_manifest.json` / intermediate image refs and save `image_decisions.json`
+7. Generate chapter-based study notes with every `keep` image embedded
+8. Add review aids, write output, validate the Markdown against `image_decisions.json`, update course memory, update `coverage_report.json`, and clean temporary artifacts
 
 If the deck is large, use `references/chunking_strategy.md`.
-If images matter, use `references/image_judgment.md`.
+Always use `references/image_judgment.md` unless the user explicitly disables images or the runtime has no visual/image-reading capability.
 Always use `references/course_memory.md`.
 
 ## Script entry points
@@ -96,9 +96,11 @@ python scripts/extract_pptx.py --input <file.pptx> --out-dir <work-dir> [--quiet
 python scripts/extract_pdf.py --input <file.pdf> --out-dir <work-dir> [--quiet] [--print-json] [--no-images] [--image-threshold 200] [--extract-selected-pages 1,3-5]
 python scripts/convert_ppt_to_pptx.py --input <file.ppt> --output <temp-file.pptx>
 python scripts/prepare_lecture.py --input-dir <LecXX> --course-root <course-root> --work-dir <course-root>/.ppt2notes_work [--no-images]
-python scripts/lint_note.py --note <original_stem>_notes.md --min-chapters 3 --max-chapters 8
+python scripts/lint_note.py --note <original_stem>_notes.md --min-chapters 3 --max-chapters 8 --image-decisions <work-dir>/image_decisions.json
 python scripts/lint_course_memory.py --memory <resolved-course_memory.json>
 ```
+
+Do not pass `--no-images` unless the user explicitly asks for no images or the runtime cannot handle image extraction.
 
 Use `.ppt2notes_work/<source-or-lecture-name>/` as the default work directory so repeated PDF extraction does not dirty course folders. `extract_pdf.py` writes `intermediate.json` and `image_manifest.json`; by default it prints only a compact summary to avoid Windows GBK stdout crashes. Use `--print-json` only when an agent truly needs full JSON on stdout.
 
@@ -126,6 +128,7 @@ For each image, produce a decision object like:
 ```json
 {
   "id": "slide12_img1",
+  "path": "slide12_img1.png",
   "decision": "keep",
   "role": "chart",
   "brief": "One concise Chinese explanation of what the image teaches"
@@ -141,7 +144,7 @@ Allowed `role` values:
 - `photo`
 - `decoration`
 
-Save the final decisions to `image_decisions.json` in the active work directory. This is required for auditability even when no images are kept.
+Save the final decisions to `image_decisions.json` in the active work directory. This is required for auditability even when no images are kept. Every decision with `"decision": "keep"` must be embedded in the final Markdown; if a kept image cannot be embedded, fix the image path or change the decision before validation.
 
 ## Companion material contract
 
@@ -176,5 +179,6 @@ These come up often enough to call out explicitly, with the reason for each so y
 - **Do not pad with unrelated knowledge to make the output longer.** Length is a side effect of explaining the source material well, never a goal. Padding dilutes the parts that actually help.
 - **Do not invent claims, data, citations, or references not grounded in the source or in standard domain knowledge.** Students will trust the note; fabrication damages that trust and produces wrong learning.
 - **Do not keep decorative images.** They cost the reader attention without teaching anything. See `references/image_judgment.md` for the keep/drop rubric.
+- **Do not omit kept instructional images from the final note.** A `keep` decision is a commitment to copy/reference the image and add a `> **图解(...)**` explanation block.
 - **Do not skip `## 复习要点` or `## 思考题`.** These two sections are what turn a passive read into active recall, which is the whole point of producing a "note" rather than a "summary".
 - **Do not skip workflow steps because the task feels long.** Each step exists to prevent a specific failure mode (e.g., skipping the chapter plan leads to slide-order drift). If a step truly does not apply, say so explicitly rather than silently dropping it.

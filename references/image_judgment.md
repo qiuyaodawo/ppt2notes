@@ -2,11 +2,14 @@
 
 In Step 5, inspect each extracted image using whatever image-reading capability the agent has available, then decide whether it should appear in the final note. When `image_manifest.json` exists, use it as the screening table before opening images: it records page number, dimensions, position, coverage, extracted/skipped status, and threshold reasons.
 
+Image handling is default-on. A `keep` decision means the image must be copied or referenced from the final Markdown with a nearby `> **图解(...)**` block. If you cannot embed the image, do not leave the decision as `keep`; fix the path, re-extract the image, or change the decision with a clear reason.
+
 ## Output structure
 
 ```json
 {
   "id": "slide12_img1",
+  "path": "slide12_img1.png",
   "decision": "keep",
   "role": "diagram",
   "brief": "One concise Chinese explanation of what the image teaches"
@@ -45,7 +48,7 @@ Allowed roles:
    - Can the agent explain the image accurately in one or two Chinese sentences?
 6. Decide:
    - If all three answers are no, drop it
-   - If any answer is yes, keep it and write a useful `brief`
+   - If any answer is yes, keep it, preserve its `path`, and write a useful `brief`
 
 ## What makes a good `brief`
 
@@ -86,7 +89,7 @@ Write `image_decisions.json` in the active work directory for debugging, auditab
   "schema_version": "1.0",
   "decisions": [
     {"id": "slide1_img1", "source_file": "PartA.pdf", "decision": "drop", "role": "decoration", "brief": ""},
-    {"id": "slide3_img1", "source_file": "PartA.pdf", "decision": "keep", "role": "diagram", "brief": "..."}
+    {"id": "slide3_img1", "source_file": "PartA.pdf", "path": "slide3_img1.png", "decision": "keep", "role": "diagram", "brief": "..."}
   ]
 }
 ```
