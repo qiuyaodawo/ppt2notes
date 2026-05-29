@@ -65,6 +65,12 @@ When `image_decisions.json` exists, include it so kept images are verified again
 python scripts/lint_note.py --note path/to/generated_notes.md --min-chapters 3 --max-chapters 8 --image-decisions path/to/image_decisions.json
 ```
 
+For depth checks, include the chapter plan and, in directory mode, the lecture manifest:
+
+```bash
+python scripts/lint_depth.py --note path/to/generated_notes.md --chapter-plan path/to/chapter_plan.json --lecture-manifest path/to/lecture_manifest.json
+```
+
 For comparative quality checks, run each prompt in a fresh agent session and manually score the assertions in `evals.json`. Keep generated outputs in a sibling workspace directory such as `../ppt2notes-workspace/iteration-1/eval-<N>/outputs/` so the skill directory stays clean.
 
 ## Adding new evals

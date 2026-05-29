@@ -35,6 +35,8 @@ CODE_EXTS = {
     ".go",
     ".rs",
     ".sql",
+    ".cu",
+    ".cuh",
 }
 
 

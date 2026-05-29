@@ -122,6 +122,7 @@
         "The lab PDF is reflected as practical guidance or common pitfalls",
         "The C example is quoted or explained only as a focused snippet, not pasted wholesale",
         "`chapter_plan.json` records `deep_explanation_targets` for central, formula-heavy, algorithmic, or easily confused topics",
+        "`lint_depth.py --note Lec01_notes.md --chapter-plan .ppt2notes_work/Lec01/chapter_plan.json --lecture-manifest .ppt2notes_work/Lec01/lecture_manifest.json` passes",
         "`chapter_plan.json` and `image_decisions.json` exist in the centralized work directory"
       ]
     }

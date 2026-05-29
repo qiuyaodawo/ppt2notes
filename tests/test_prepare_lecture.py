@@ -35,6 +35,10 @@ class PrepareLectureTests(unittest.TestCase):
             write_pdf(lecture / "Q0.1.pdf", "Question 0.1", "What does the parser accept?")
             write_pdf(lecture / "Lab01.pdf", "Lab", "Implement a scanner.")
             (lecture / "example.c").write_text("int main(void) { return 0; }\n", encoding="utf-8")
+            (lecture / "reduction.cu").write_text(
+                "__global__ void reduce(float *x) { /* CUDA example */ }\n",
+                encoding="utf-8",
+            )
 
             result = subprocess.run(
                 [
@@ -70,7 +74,8 @@ class PrepareLectureTests(unittest.TestCase):
             self.assertEqual(kinds["Q0.1.pdf"], "questions")
             self.assertEqual(kinds["Lab01.pdf"], "labs")
             self.assertEqual(kinds["example.c"], "code_examples")
-            self.assertEqual(len(coverage["sources"]), 4)
+            self.assertEqual(kinds["reduction.cu"], "code_examples")
+            self.assertEqual(len(coverage["sources"]), 5)
             self.assertTrue(all("included_in_plan" in source for source in coverage["sources"]))
 
     def test_memory_path_override_wins(self) -> None:

@@ -200,8 +200,17 @@ Companion material rules:
       "slide_indices": [5, 6, 7, 8, 9],
       "summary": "Derives gradient computation and weight updates through the chain rule.",
       "deep_explanation_targets": [
-        "Why the chain rule lets the final loss be decomposed into local gradients",
-        "How gradient vanishing appears when many small derivatives are multiplied"
+        "用三层网络的一个权重路径推导 chain rule 如何把最终 loss 分解成局部梯度",
+        "用连续相乘的 0.2 导数数值例子解释 gradient vanishing 为什么会让前层几乎不更新"
+      ],
+      "code_examples": [
+        {
+          "path": "backprop_example.py",
+          "snippet": "dW2 = h.T @ dlogits"
+        }
+      ],
+      "question_prompts": [
+        "Q0.1.pdf: worked prompt for deriving one local gradient"
       ]
     }
   ]
@@ -217,8 +226,10 @@ Write this plan to `chapter_plan.json` in the active work directory before draft
 - Reordering is allowed if it improves topical flow
 - Do not split one slide across multiple chapters
 - Cover all non-empty instructional slides; title pages, agenda pages, and thank-you pages may be dropped
-- For each chapter, record `deep_explanation_targets` for central, repeated, later-dependent, formula-heavy, algorithmic, derivation-based, process-diagram, or easily confused topics
+- For each chapter, record `deep_explanation_targets` for central, repeated, later-dependent, formula-heavy, algorithmic, derivation-based, process-diagram, or easily confused topics. Each target must name a concrete explanation block, not a broad objective. Prefer targets like "用两个 MPI 进程的发送/接收顺序画出阻塞通信死锁" or "用一个 warp 等待访存、另一个 ready warp 被调度的时间线解释 latency hiding"; avoid broad targets like "理解 SM、warp scheduling 和架构演化".
 - In directory mode, cover all primary lecture-slide files unless a file is clearly non-instructional; account for every question, lab, and code file in coverage even if it is not included in prose
+- In directory mode, every `code_examples` material from `lecture_manifest.json` must appear in at least one chapter's `code_examples`, with a path and preferably a short snippet. Every `questions` material must appear in `question_prompts` or `questions` as a worked prompt, checkpoint, or final `思考题` candidate. `lint_depth.py --lecture-manifest` enforces this.
+- In directory mode with multiple slide files, use `source_refs` when page numbers overlap, for example `{"source_path": "02-PartB.pdf", "slide_indices": [1, 2]}`. `build_chapter_context.py` uses `source_refs` to avoid confusing page 1 of Part A with page 1 of Part B.
 - Use course memory to clarify continuity references and terminology, but never let it override the current source material
 
 **Short-deck fallback:** if the deck has fewer than ~5 instructional slides after dropping cover/agenda/thank-you pages, ignore the "3 to 8 chapters" rule and produce a single chapter that covers the whole deck. Splitting a 4-slide deck into 3 chapters yields three thin sections that hurt readability more than they help.
@@ -248,7 +259,21 @@ Key rules:
 
 Use `assets/note_template.md` as the output skeleton. Do not copy placeholder text; use it to keep heading levels, image blocks, and review sections consistent.
 
-### Input package per chapter
+### Build the input package per chapter
+
+After `chapter_plan.json` and `image_decisions.json` are ready, build an explicit drafting context:
+
+```bash
+python scripts/build_chapter_context.py \
+  --chapter-plan <work-dir>/chapter_plan.json \
+  --intermediate <work-dir>/intermediate.json \
+  --image-decisions <work-dir>/image_decisions.json \
+  --out <work-dir>/chapter_context.json
+```
+
+In directory mode, pass every primary slide extraction with repeated `--intermediate`, and use the `code_examples` and `question_prompts` already recorded in each chapter plan entry. Draft from `chapter_context.json`, not from the chapter summary alone. This is the execution closure for `deep_explanation_targets`.
+
+Each chapter package must contain:
 
 ```text
 - chapter title
@@ -256,6 +281,8 @@ Use `assets/note_template.md` as the output skeleton. Do not copy placeholder te
 - all text and notes from the listed slides
 - kept images for those slides (id + path + brief + role)
 - deep explanation targets from the chapter plan
+- code examples and key snippets assigned to the chapter
+- question/lab prompts assigned to the chapter
 - previous chapter summary, if any
 - compact course memory briefing from Step 3
 ```
@@ -270,6 +297,8 @@ Use `assets/note_template.md` as the output skeleton. Do not copy placeholder te
 6. Use `###` subsections when a chapter is dense
 7. Use course memory for terminology, notation, and brief continuity bridges
 8. If course memory contains prior lectures and the current lecture clearly continues them, add a one- or two-sentence `> **与前文的衔接**` block after the note header
+9. For every code file assigned to the chapter, quote one key snippet, explain which concept it verifies, and name one common mistake or runtime phenomenon
+10. For every question PDF assigned to the chapter, turn it into a worked prompt, checkpoint, or final `思考题` candidate
 
 After drafting a chapter, compare it against its `deep_explanation_targets` and kept images. If a target is only named, translated, or restated from the slide, revise the chapter before moving on. If a kept image is not embedded with a nearby `> **图解(...)**` block, copy/reference the image or revise the decision before moving on.
 
@@ -290,6 +319,20 @@ After drafting a chapter, compare it against its `deep_explanation_targets` and 
 ```
 
 Use `chunking_strategy.md` when the deck is large.
+
+### Enhancing an existing note
+
+When the user wants to improve already-generated notes, do not regenerate from scratch unless necessary. Build enhancement prompts:
+
+```bash
+python scripts/build_chapter_context.py \
+  --chapter-plan <work-dir>/chapter_plan.json \
+  --existing-note <note.md> \
+  --mode enhance \
+  --out <work-dir>/enhance_context.json
+```
+
+For each chapter, append one or more `### 深入理解：...` blocks after the current chapter content. Each block must consume a `deep_explanation_targets` item and include the problem, intuition, steps/derivation or execution trace, an example or pitfall, and the connection to the surrounding lecture. Then rerun `lint_note.py` and `lint_depth.py`.
 
 ## Step 7 - Add review aids
 
@@ -340,6 +383,18 @@ run([
     "--image-decisions",
     str(image_decisions_path),
 ])
+
+lint_depth_cmd = [
+    "python",
+    "scripts/lint_depth.py",
+    "--note",
+    str(output_path),
+    "--chapter-plan",
+    str(work_dir / "chapter_plan.json"),
+]
+if lecture_manifest_path:
+    lint_depth_cmd.extend(["--lecture-manifest", str(lecture_manifest_path)])
+run(lint_depth_cmd)
 
 # After linting passes, update course_memory.json according to course_memory.md.
 course_memory = update_course_memory(

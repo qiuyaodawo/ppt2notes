@@ -96,7 +96,9 @@ python scripts/extract_pptx.py --input <file.pptx> --out-dir <work-dir> [--quiet
 python scripts/extract_pdf.py --input <file.pdf> --out-dir <work-dir> [--quiet] [--print-json] [--no-images] [--image-threshold 200] [--extract-selected-pages 1,3-5]
 python scripts/convert_ppt_to_pptx.py --input <file.ppt> --output <temp-file.pptx>
 python scripts/prepare_lecture.py --input-dir <LecXX> --course-root <course-root> --work-dir <course-root>/.ppt2notes_work [--no-images]
+python scripts/build_chapter_context.py --chapter-plan <work-dir>/chapter_plan.json --intermediate <work-dir>/intermediate.json [--image-decisions <work-dir>/image_decisions.json] --out <work-dir>/chapter_context.json
 python scripts/lint_note.py --note <original_stem>_notes.md --min-chapters 3 --max-chapters 8 --image-decisions <work-dir>/image_decisions.json
+python scripts/lint_depth.py --note <original_stem>_notes.md --chapter-plan <work-dir>/chapter_plan.json [--lecture-manifest <work-dir>/lecture_manifest.json]
 python scripts/lint_course_memory.py --memory <resolved-course_memory.json>
 ```
 
@@ -112,6 +114,17 @@ In directory mode, run `prepare_lecture.py` first. It sorts files by name, class
 - per-PDF `image_manifest.json`
 
 For very short decks, run `lint_note.py` with `--min-chapters 1 --max-chapters 1`.
+
+After `chapter_plan.json` and `image_decisions.json` exist, run `build_chapter_context.py` and draft from the generated `chapter_context.json`. Do not draft chapter bodies directly from `chapter["body"]` or from the plan summary alone; the context package is the handoff that forces `deep_explanation_targets`, source slides, kept images, code examples, and question prompts into the writing pass. In directory mode, pass every primary `intermediate.json` with repeated `--intermediate`.
+
+Before reporting a note as complete, run both structural and depth validation:
+
+```text
+python scripts/lint_note.py --note <note.md> --min-chapters <1-or-3> --max-chapters 8 --image-decisions <work-dir>/image_decisions.json [--image-manifest <work-dir>/image_manifest.json]
+python scripts/lint_depth.py --note <note.md> --chapter-plan <work-dir>/chapter_plan.json [--lecture-manifest <work-dir>/lecture_manifest.json]
+```
+
+For existing notes that need a depth pass without full regeneration, run `build_chapter_context.py --mode enhance --existing-note <note.md> --chapter-plan <work-dir>/chapter_plan.json --out <work-dir>/enhance_context.json`, then append generated `### 深入理解：...` blocks to the matching chapters and rerun both linters.
 
 The intermediate JSON schema is documented in `assets/intermediate_schema.json`.
 

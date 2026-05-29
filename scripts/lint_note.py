@@ -16,6 +16,17 @@ from pathlib import Path
 ALLOWED_IMAGE_ROLES = {"chart", "formula", "diagram", "screenshot", "photo"}
 
 
+def configure_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+
 def line_number_for_offset(text: str, offset: int) -> int:
     return text.count("\n", 0, offset) + 1
 
@@ -30,6 +41,25 @@ def chapter_headings(lines: list[str]) -> list[str]:
             continue
         headings.append(title)
     return headings
+
+
+def markdown_sections(text: str) -> list[tuple[str, str]]:
+    matches = list(re.finditer(r"(?m)^##\s+(.+?)\s*$", text))
+    sections: list[tuple[str, str]] = []
+    for i, match in enumerate(matches):
+        title = match.group(1).strip()
+        start = match.end()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        sections.append((title, text[start:end].strip()))
+    return sections
+
+
+def chapter_sections(text: str) -> list[tuple[str, str]]:
+    return [
+        (title, body)
+        for title, body in markdown_sections(text)
+        if title not in {"复习要点", "思考题"}
+    ]
 
 
 def clean_image_target(raw_target: str) -> str:
@@ -91,6 +121,37 @@ def lint_image_decisions(path: Path, image_targets: list[str]) -> list[str]:
     return errors
 
 
+def image_manifest_warnings(path: Path) -> list[str]:
+    if not path.exists():
+        return [f"Image manifest file does not exist: {path}"]
+    if not path.is_file():
+        return [f"Image manifest path is not a file: {path}"]
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [f"Image manifest JSON is invalid: {exc}"]
+    if isinstance(payload, dict) and payload.get("images_extracted") is False:
+        return ["未进行图像评估：image_manifest.json shows images_extracted: false"]
+    return []
+
+
+def review_point_count(text: str) -> int:
+    if "## 复习要点" not in text:
+        return 0
+    review_section = text.split("## 复习要点", 1)[1]
+    if "## 思考题" in review_section:
+        review_section = review_section.split("## 思考题", 1)[0]
+    return len(re.findall(r"(?m)^\s*[-*]\s+", review_section))
+
+
+def is_dense_chapter(body: str) -> bool:
+    compact_len = len(re.sub(r"\s+", "", body))
+    dense_hits = len(
+        re.findall(r"公式|算法|推导|执行模型|状态机|证明|复杂度|轨迹|容易混淆", body)
+    )
+    return compact_len >= 1800 or (compact_len >= 900 and dense_hits >= 3)
+
+
 def lint_note(
     path: Path,
     min_chapters: int,
@@ -125,6 +186,21 @@ def lint_note(
         errors.append(
             f"Expected {min_chapters}-{max_chapters} chapter headings, found {len(chapters)}"
         )
+
+    review_points = review_point_count(text)
+    if chapters and review_points != len(chapters):
+        errors.append(
+            f"Review point count must match chapter count: found {review_points}, expected {len(chapters)}"
+        )
+
+    malformed_prompt = re.search(r"。[ \t]*(?:[*_]+)?提示", text)
+    if malformed_prompt:
+        line_no = line_number_for_offset(text, malformed_prompt.start())
+        errors.append(f"Malformed prompt marker on line {line_no}: put 提示 on its own line")
+
+    for title, body in chapter_sections(text):
+        if is_dense_chapter(body) and not re.search(r"(?m)^###\s+", body):
+            errors.append(f"Dense chapter should use ### subsections: {title}")
 
     question_section = text.split("## 思考题", 1)[1] if "## 思考题" in text else ""
     questions = re.findall(r"(?m)^\d+\.\s+", question_section)
@@ -169,6 +245,7 @@ def lint_note(
 
 
 def main() -> int:
+    configure_utf8_stdio()
     parser = argparse.ArgumentParser(description="Lint a generated ppt2notes Markdown note")
     parser.add_argument("--note", required=True, help="Generated Markdown note path")
     parser.add_argument("--min-chapters", type=int, default=1, help="Minimum chapter count")
@@ -177,6 +254,11 @@ def main() -> int:
         "--image-decisions",
         default="",
         help="Optional image_decisions.json path; kept images must be embedded in the note",
+    )
+    parser.add_argument(
+        "--image-manifest",
+        default="",
+        help="Optional image_manifest.json path; reports when images were not extracted/evaluated",
     )
     args = parser.parse_args()
 
@@ -189,12 +271,21 @@ def main() -> int:
         args.max_chapters,
         image_decisions,
     )
+    warnings = (
+        image_manifest_warnings(Path(args.image_manifest).expanduser().resolve())
+        if args.image_manifest
+        else []
+    )
     if errors:
         print("lint_note failed:", file=sys.stderr)
         for error in errors:
             print(f"- {error}", file=sys.stderr)
+        for warning in warnings:
+            print(f"warning: {warning}", file=sys.stderr)
         return 1
 
+    for warning in warnings:
+        print(f"warning: {warning}")
     print("lint_note passed")
     return 0
 
