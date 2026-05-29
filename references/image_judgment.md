@@ -2,7 +2,7 @@
 
 In Step 5, inspect each extracted image using whatever image-reading capability the agent has available, then decide whether it should appear in the final note. When `image_manifest.json` exists, use it as the screening table before opening images: it records page number, dimensions, position, coverage, extracted/skipped status, and threshold reasons.
 
-Image handling is default-on. A `keep` decision means the image must be copied or referenced from the final Markdown with a nearby `> **图解(...)**` block. If you cannot embed the image, do not leave the decision as `keep`; fix the path, re-extract the image, or change the decision with a clear reason.
+Image handling is default-on. A `keep` decision means the image must be copied to the final assets directory and referenced from the final Markdown with a nearby `> **图解(...)**` block. If you cannot embed the image, do not leave the decision as `keep`; fix the path, re-extract the image, or change the decision with a clear reason.
 
 ## Output structure
 
@@ -10,11 +10,14 @@ Image handling is default-on. A `keep` decision means the image must be copied o
 {
   "id": "slide12_img1",
   "path": "slide12_img1.png",
+  "note_path": "lecture_assets/slide12_img1.png",
   "decision": "keep",
   "role": "diagram",
   "brief": "One concise Chinese explanation of what the image teaches"
 }
 ```
+
+`path` is the raw extracted image path relative to the active work directory. `note_path` is the final relative path used in the Markdown note after copying the retained image to a final assets directory such as `{output_stem}_assets/` or `{lecture_dir_name}_assets/`. Preserve the original image basename so `lint_note.py --image-decisions` can match the decision to the embedded Markdown image.
 
 Allowed roles:
 
@@ -48,7 +51,7 @@ Allowed roles:
    - Can the agent explain the image accurately in one or two Chinese sentences?
 6. Decide:
    - If all three answers are no, drop it
-   - If any answer is yes, keep it, preserve its `path`, and write a useful `brief`
+   - If any answer is yes, keep it, preserve its raw `path`, set `note_path`, and write a useful `brief`
 
 ## What makes a good `brief`
 
@@ -72,6 +75,8 @@ Bad:
 ![图 3-2](lecture_assets/slide12_img1.png)
 ```
 
+The role in the `图解` block must match the kept decision role. Do not embed an image with `decoration` as its role.
+
 ## Boundaries and pitfalls
 
 - For `formula` images, LaTeX in the note is mandatory even if the image is kept
@@ -89,7 +94,7 @@ Write `image_decisions.json` in the active work directory for debugging, auditab
   "schema_version": "1.0",
   "decisions": [
     {"id": "slide1_img1", "source_file": "PartA.pdf", "decision": "drop", "role": "decoration", "brief": ""},
-    {"id": "slide3_img1", "source_file": "PartA.pdf", "path": "slide3_img1.png", "decision": "keep", "role": "diagram", "brief": "..."}
+    {"id": "slide3_img1", "source_file": "PartA.pdf", "path": "slide3_img1.png", "note_path": "Lec01_assets/slide3_img1.png", "decision": "keep", "role": "diagram", "brief": "..."}
   ]
 }
 ```

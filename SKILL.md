@@ -1,6 +1,6 @@
 ---
 name: ppt2notes
-description: Use when the user provides a course `.ppt`, `.pptx`, slide-style `.pdf`, or lecture folder such as `Lec01/` and asks for an organized Chinese study note, handout, review note, or topic-reorganized learning artifact. Trigger for casual requests like "整理课件", "做笔记", "整理成讲义", including one-lecture directories with multiple Part PDFs, question PDFs, labs, or code examples. Do not trigger for pure translation, books/papers, non-learning decks, bare files with no task, or conversational "explain this slide" questions without a written deliverable.
+description: Use when the user provides a course `.ppt`, `.pptx`, slide-style `.pdf`, or one lecture folder such as `Lec01/` and asks for Chinese study notes, handouts, review notes, or topic-reorganized learning material. Trigger for casual requests like "整理课件", "做笔记", "整理成讲义", including multi-Part lecture folders with questions, labs, or code. Do not trigger for pure translation, books/papers, non-learning decks, bare files, or conversational slide explanations without a written deliverable.
 ---
 
 # ppt2notes
@@ -42,7 +42,7 @@ Output:
 - `course_memory.json`, created or updated on every successful run. In directory mode, default it to the course root, not the `LecXX` folder.
 - A centralized work directory, normally `.ppt2notes_work/`, containing extraction artifacts, manifests, coverage, chapter plans, and image decisions
 - A single Markdown document in Chinese
-- Image-aware output by default: extract images, judge every extracted image, and embed every retained instructional image in the final note. Do not leave one `_assets` directory per source PDF unless the user explicitly wants raw extraction artifacts preserved.
+- Image-aware output by default: extract images, judge every extracted image, and embed every retained instructional image in the final note. Keep raw extraction artifacts in `.ppt2notes_work/`; copy retained images to one final assets directory such as `{output_stem}_assets/`.
 
 Writing contract:
 
@@ -142,6 +142,7 @@ For each image, produce a decision object like:
 {
   "id": "slide12_img1",
   "path": "slide12_img1.png",
+  "note_path": "lecture_assets/slide12_img1.png",
   "decision": "keep",
   "role": "chart",
   "brief": "One concise Chinese explanation of what the image teaches"
@@ -157,7 +158,7 @@ Allowed `role` values:
 - `photo`
 - `decoration`
 
-Save the final decisions to `image_decisions.json` in the active work directory. This is required for auditability even when no images are kept. Every decision with `"decision": "keep"` must be embedded in the final Markdown; if a kept image cannot be embedded, fix the image path or change the decision before validation.
+Save the final decisions to `image_decisions.json` in the active work directory. This is required for auditability even when no images are kept. For kept images, `path` is the raw path relative to the work directory and `note_path` is the final relative Markdown path after copying to `{output_stem}_assets/`. Every `"decision": "keep"` entry must have a non-decoration role, a non-empty `brief`, and an embedded Markdown image whose `> **图解(...)**` role matches the decision role. If a kept image cannot be embedded, fix the path or change the decision before validation.
 
 ## Companion material contract
 

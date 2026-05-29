@@ -59,7 +59,7 @@ For structural checks after a note is generated, run:
 python scripts/lint_note.py --note path/to/generated_notes.md --min-chapters 3 --max-chapters 8
 ```
 
-When `image_decisions.json` exists, include it so kept images are verified against the Markdown:
+When `image_decisions.json` exists, include it so kept images are verified against the Markdown. Kept decisions should include both the raw work-dir `path` and the final Markdown-relative `note_path`.
 
 ```bash
 python scripts/lint_note.py --note path/to/generated_notes.md --min-chapters 3 --max-chapters 8 --image-decisions path/to/image_decisions.json

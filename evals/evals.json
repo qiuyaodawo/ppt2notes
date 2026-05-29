@@ -51,7 +51,7 @@
         "Output file `image_heavy_notes.md` exists",
         "Number of `![...](...)` image references in the output is strictly less than the number of image files originally extracted into `image_heavy_assets/`",
         "Every kept image is preceded (within 5 lines above) by a `> **图解(图 X-Y,<role>):**` explanation block",
-        "Every `decision: keep` entry in `.ppt2notes_work/image_heavy/image_decisions.json` is embedded in `image_heavy_notes.md`",
+        "Every `decision: keep` entry in `.ppt2notes_work/image_heavy/image_decisions.json` has a non-empty `brief`, a non-decoration `role`, a `note_path`, and is embedded in `image_heavy_notes.md` using that final path",
         "Allowed `<role>` values in 图解 blocks are one of: chart, formula, diagram, screenshot, photo",
         "No kept image has the role `decoration`",
         "Output contains both `## 复习要点` and `## 思考题`",
@@ -123,7 +123,7 @@
         "The C example is quoted or explained only as a focused snippet, not pasted wholesale",
         "`chapter_plan.json` records `deep_explanation_targets` for central, formula-heavy, algorithmic, or easily confused topics",
         "`lint_depth.py --note Lec01_notes.md --chapter-plan .ppt2notes_work/Lec01/chapter_plan.json --lecture-manifest .ppt2notes_work/Lec01/lecture_manifest.json` passes",
-        "`chapter_plan.json` and `image_decisions.json` exist in the centralized work directory"
+        "`chapter_plan.json` and `image_decisions.json` exist in the centralized work directory; every kept image decision has `note_path` pointing to the final lecture assets directory"
       ]
     }
   ]

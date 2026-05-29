@@ -58,6 +58,43 @@ def valid_note_with_image() -> str:
 """
 
 
+def run_lint_with_image_decision(
+    note_text: str,
+    decision: dict[str, object],
+) -> subprocess.CompletedProcess[str]:
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        note = tmp_path / "lecture_notes.md"
+        decisions = tmp_path / "image_decisions.json"
+        image = tmp_path / "lecture_assets" / "slide3_img1.png"
+        image.parent.mkdir()
+        image.write_bytes(b"fake image bytes")
+
+        note.write_text(note_text, encoding="utf-8")
+        decisions.write_text(
+            json.dumps(
+                {"schema_version": "1.0", "decisions": [decision]},
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        return subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--note",
+                str(note),
+                "--image-decisions",
+                str(decisions),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+
+
 class LintNoteTests(unittest.TestCase):
     def test_review_point_count_must_match_chapter_count(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -187,98 +224,99 @@ class LintNoteTests(unittest.TestCase):
             self.assertIn("未进行图像评估", result.stdout)
 
     def test_keep_image_decisions_must_be_embedded_in_note(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            note = tmp_path / "lecture_notes.md"
-            decisions = tmp_path / "image_decisions.json"
-            image = tmp_path / "lecture_assets" / "slide3_img1.png"
-            image.parent.mkdir()
-            image.write_bytes(b"fake image bytes")
+        result = run_lint_with_image_decision(
+            valid_note_without_images(),
+            {
+                "id": "slide3_img1",
+                "decision": "keep",
+                "role": "diagram",
+                "brief": "这张图解释核心流程。",
+                "path": "slide3_img1.png",
+                "note_path": "lecture_assets/slide3_img1.png",
+            },
+        )
 
-            note.write_text(valid_note_without_images(), encoding="utf-8")
-            decisions.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "1.0",
-                        "decisions": [
-                            {
-                                "id": "slide3_img1",
-                                "decision": "keep",
-                                "role": "diagram",
-                                "brief": "这张图解释核心流程。",
-                                "path": "lecture_assets/slide3_img1.png",
-                            }
-                        ],
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
-
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(SCRIPT),
-                    "--note",
-                    str(note),
-                    "--image-decisions",
-                    str(decisions),
-                ],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Kept image decision is not embedded", result.stderr)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Kept image decision is not embedded", result.stderr)
 
     def test_embedded_keep_image_decision_passes(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            note = tmp_path / "lecture_notes.md"
-            decisions = tmp_path / "image_decisions.json"
-            image = tmp_path / "lecture_assets" / "slide3_img1.png"
-            image.parent.mkdir()
-            image.write_bytes(b"fake image bytes")
+        result = run_lint_with_image_decision(
+            valid_note_with_image(),
+            {
+                "id": "slide3_img1",
+                "decision": "keep",
+                "role": "diagram",
+                "brief": "这张图解释核心流程。",
+                "path": "slide3_img1.png",
+                "note_path": "lecture_assets/slide3_img1.png",
+            },
+        )
 
-            note.write_text(valid_note_with_image(), encoding="utf-8")
-            decisions.write_text(
-                json.dumps(
-                    {
-                        "schema_version": "1.0",
-                        "decisions": [
-                            {
-                                "id": "slide3_img1",
-                                "decision": "keep",
-                                "role": "diagram",
-                                "brief": "这张图解释核心流程。",
-                                "path": "slide3_img1.png",
-                            }
-                        ],
-                    },
-                    ensure_ascii=False,
-                ),
-                encoding="utf-8",
-            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("lint_note passed", result.stdout)
 
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    str(SCRIPT),
-                    "--note",
-                    str(note),
-                    "--image-decisions",
-                    str(decisions),
-                ],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-            )
+    def test_keep_image_decision_cannot_use_decoration_role(self) -> None:
+        result = run_lint_with_image_decision(
+            valid_note_with_image(),
+            {
+                "id": "slide3_img1",
+                "decision": "keep",
+                "role": "decoration",
+                "brief": "这张图解释核心流程。",
+                "path": "slide3_img1.png",
+                "note_path": "lecture_assets/slide3_img1.png",
+            },
+        )
 
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("lint_note passed", result.stdout)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Kept image decision cannot use role decoration", result.stderr)
+
+    def test_keep_image_decision_requires_nonempty_brief(self) -> None:
+        result = run_lint_with_image_decision(
+            valid_note_with_image(),
+            {
+                "id": "slide3_img1",
+                "decision": "keep",
+                "role": "diagram",
+                "brief": "",
+                "path": "slide3_img1.png",
+                "note_path": "lecture_assets/slide3_img1.png",
+            },
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Kept image decision must include a non-empty brief", result.stderr)
+
+    def test_keep_image_decision_requires_note_path(self) -> None:
+        result = run_lint_with_image_decision(
+            valid_note_with_image(),
+            {
+                "id": "slide3_img1",
+                "decision": "keep",
+                "role": "diagram",
+                "brief": "这张图解释核心流程。",
+                "path": "slide3_img1.png",
+            },
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Kept image decision must include note_path", result.stderr)
+
+    def test_keep_image_decision_role_must_match_note_block(self) -> None:
+        result = run_lint_with_image_decision(
+            valid_note_with_image(),
+            {
+                "id": "slide3_img1",
+                "decision": "keep",
+                "role": "chart",
+                "brief": "这张图解释核心流程。",
+                "path": "slide3_img1.png",
+                "note_path": "lecture_assets/slide3_img1.png",
+            },
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Kept image role mismatch", result.stderr)
 
 
 if __name__ == "__main__":

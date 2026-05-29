@@ -60,6 +60,8 @@ Resolve paths as follows:
 - `--memory-path`: an explicit memory path, if provided by the user. It overrides `--course-root`.
 - `--work-dir`: default to `<course-root>/.ppt2notes_work`.
 
+If `lecture_manifest.json` contains any material with `requires_conversion: true`, convert that `.ppt` with `convert_ppt_to_pptx.py`, extract the converted `.pptx` into that material's `work_dir`, and update the manifest/coverage paths before chapter planning. If LibreOffice is missing, stop with the install/resave guidance instead of continuing with an empty material.
+
 ## Step 2 - Extract the intermediate JSON
 
 **Why this step exists:** Separating extraction from generation gives a stable, inspectable artifact between the two stages. If something looks wrong in the final note, you can re-check `intermediate.json` to tell whether the bug was in extraction or in the writing stage. It also makes the rest of the pipeline format-agnostic.
@@ -83,7 +85,7 @@ For a lecture directory `/course/Lec01/`:
 
 Image extraction is default-on. Do not pass `--no-images` unless the user explicitly asks for a text-only note or the runtime cannot extract images.
 
-Keep raw extraction artifacts under `.ppt2notes_work/`. For every retained instructional image, copy only that image to a small final assets location and reference the final relative path from the note. Do not leave raw per-PDF `_assets` directories in the lecture folder.
+Keep raw extraction artifacts under `.ppt2notes_work/`. For every retained instructional image, copy only that image to a small final assets location such as `{output_stem}_assets/` or `{lecture_dir_name}_assets/`, then reference that final relative path from the note. Do not leave raw per-PDF `_assets` directories in the lecture folder.
 
 `extract_pdf.py` writes `intermediate.json` and `image_manifest.json`; `extract_pptx.py` writes image refs into `intermediate.json`. Both print only a compact summary by default; use `--print-json` only if stdout JSON is explicitly needed. Use `--quiet` in batch or directory runs.
 
@@ -248,7 +250,7 @@ Key rules:
 
 - Use whatever image-reading capability the agent has available. If images were extracted but no visual inspection is available, use `image_manifest.json`, image dimensions/positions, filenames, and `context_text` as a fallback rather than skipping `image_decisions.json`.
 - Start from `image_manifest.json` when present, because it records extracted/skipped images, dimensions, position, coverage, and threshold decisions
-- Produce `{id, path, decision, role, brief}` for each image
+- Produce `{id, path, note_path, decision, role, brief}` for each kept image; `path` stays relative to the work directory and `note_path` is relative to the final Markdown note
 - Decorative images should be dropped
 - Informative charts, formulas, diagrams, screenshots, and content-relevant photos must be kept unless they are unreadable, redundant, or better represented as text/code/formulas
 - Write the final image decisions to `image_decisions.json` in the active work directory before drafting image blocks
@@ -364,10 +366,19 @@ Requirements:
 **Why this step exists:** The previous steps produce content in memory or in temporary files; this step commits the final artifacts to disk, catches broken structure before delivery, updates persistent course context for future runs, and removes scaffolding the user does not need. A clear printed summary at the end also lets the user know exactly what was produced and where to find it, which matters when the working directory contains both source slides and generated files.
 
 ```python
+import shutil
+
 output_path = source_path.with_name(f"{source_path.stem}_notes.md")
 output_path.write_text(final_md, encoding="utf-8")
 image_decisions_path = work_dir / "image_decisions.json"
 write_json(image_decisions_path, image_decisions)
+
+for img in image_decisions:
+    if img["decision"] == "keep":
+        raw_image = work_dir / img["path"]
+        final_image = output_path.parent / img["note_path"]
+        final_image.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(raw_image, final_image)
 
 # Reuse the short-deck fallback decision from Step 4.
 lint_min = 1 if is_short_deck else 3
@@ -435,6 +446,7 @@ Important:
 
 - Before running the linter, perform a depth self-check against `chapter_plan.json`: every `deep_explanation_targets` item should have a substantive explanation in the corresponding chapter, not just a bullet restatement
 - `img["path"]` is relative to `work_dir`
+- `img["note_path"]` is relative to the final note path and must match the Markdown image target
 - Preserve the extracted image basename when copying a kept image to final assets, so `lint_note.py --image-decisions` can match the decision to the Markdown image target
 - Clean up only files created by this workflow
 - If `lint_note.py` fails, fix the Markdown structure or image paths and rerun it before reporting completion

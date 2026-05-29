@@ -1,0 +1,4 @@
+interface:
+  display_name: "PPT to Notes"
+  short_description: "Course slides to Chinese study notes"
+  default_prompt: "Use $ppt2notes to turn this lecture deck into organized Chinese study notes."

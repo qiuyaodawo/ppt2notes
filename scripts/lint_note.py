@@ -14,6 +14,7 @@ from pathlib import PurePosixPath
 from pathlib import Path
 
 ALLOWED_IMAGE_ROLES = {"chart", "formula", "diagram", "screenshot", "photo"}
+ALLOWED_DECISION_ROLES = ALLOWED_IMAGE_ROLES | {"decoration"}
 
 
 def configure_utf8_stdio() -> None:
@@ -67,7 +68,7 @@ def clean_image_target(raw_target: str) -> str:
     return target.replace("\\", "/")
 
 
-def image_target_matches_decision(targets: list[str], decision: dict) -> bool:
+def matching_image_targets(targets: list[str], decision: dict) -> list[str]:
     image_id = str(decision.get("id", "")).strip()
     raw_path = str(
         decision.get("note_path")
@@ -79,18 +80,25 @@ def image_target_matches_decision(targets: list[str], decision: dict) -> bool:
     normalized_path = raw_path.replace("\\", "/")
     basename = PurePosixPath(normalized_path).name if normalized_path else ""
 
+    matches: list[str] = []
     for target in targets:
         target_name = PurePosixPath(target).name
         if normalized_path and (target == normalized_path or target.endswith(f"/{normalized_path}")):
-            return True
+            matches.append(target)
+            continue
         if basename and target_name == basename:
-            return True
+            matches.append(target)
+            continue
         if image_id and image_id in target:
-            return True
-    return False
+            matches.append(target)
+    return matches
 
 
-def lint_image_decisions(path: Path, image_targets: list[str]) -> list[str]:
+def lint_image_decisions(
+    path: Path,
+    image_targets: list[str],
+    image_roles: dict[str, list[str]],
+) -> list[str]:
     errors: list[str] = []
     if not path.exists():
         return [f"Image decisions file does not exist: {path}"]
@@ -110,13 +118,42 @@ def lint_image_decisions(path: Path, image_targets: list[str]) -> list[str]:
         if not isinstance(decision, dict):
             errors.append("Image decision entries must be objects")
             continue
+        image_id = str(decision.get("id", "")).strip() or "<missing id>"
+        role = str(decision.get("role", "")).strip()
+        if role and role not in ALLOWED_DECISION_ROLES:
+            errors.append(f"Image decision has invalid role for {image_id}: {role}")
         if decision.get("decision") != "keep":
             continue
-        if not image_target_matches_decision(image_targets, decision):
-            image_id = str(decision.get("id", "")).strip() or "<missing id>"
+        if not role:
+            errors.append(f"Kept image decision must include a role: {image_id}")
+        elif role == "decoration":
+            errors.append(f"Kept image decision cannot use role decoration: {image_id}")
+        elif role not in ALLOWED_IMAGE_ROLES:
+            errors.append(f"Kept image decision has invalid role for {image_id}: {role}")
+        if not str(decision.get("brief", "")).strip():
+            errors.append(f"Kept image decision must include a non-empty brief: {image_id}")
+        if not str(decision.get("note_path", "")).strip():
+            errors.append(f"Kept image decision must include note_path: {image_id}")
+
+        matching_targets = matching_image_targets(image_targets, decision)
+        if not matching_targets:
             image_path = str(decision.get("note_path") or decision.get("path") or "").strip()
             detail = f"{image_id} ({image_path})" if image_path else image_id
             errors.append(f"Kept image decision is not embedded in note: {detail}")
+            continue
+
+        if role in ALLOWED_IMAGE_ROLES:
+            note_roles = sorted(
+                {
+                    note_role
+                    for target in matching_targets
+                    for note_role in image_roles.get(target, [])
+                }
+            )
+            if note_roles and role not in note_roles:
+                errors.append(
+                    f"Kept image role mismatch for {image_id}: decision={role}, note={','.join(note_roles)}"
+                )
 
     return errors
 
@@ -218,9 +255,12 @@ def lint_note(
             line_no = line_number_for_offset(text, match.start())
             errors.append(f"Broken image reference on line {line_no}: {raw_target}")
 
+    image_roles: dict[str, list[str]] = {}
     for i, line in enumerate(lines):
         if not line.startswith("!["):
             continue
+        target_match = re.search(r"!\[[^\]]*]\(([^)]+)\)", line)
+        target = clean_image_target(target_match.group(1)) if target_match else ""
         window = lines[max(0, i - 5) : i]
         joined = "\n".join(window)
         m = re.search(r"> \*\*图解\(图 [^)]+,([a-z]+)\):\*\*", joined)
@@ -230,6 +270,8 @@ def lint_note(
         role = m.group(1)
         if role not in ALLOWED_IMAGE_ROLES:
             errors.append(f"Image on line {i + 1} has invalid role: {role}")
+        elif target:
+            image_roles.setdefault(target, []).append(role)
 
     bullet_lines = [line for line in lines if line.lstrip().startswith(("- ", "* ", "• "))]
     sentence_marks = text.count("。") + text.count("？") + text.count("！")
@@ -239,7 +281,7 @@ def lint_note(
         )
 
     if image_decisions is not None:
-        errors.extend(lint_image_decisions(image_decisions, image_targets))
+        errors.extend(lint_image_decisions(image_decisions, image_targets, image_roles))
 
     return errors
 
